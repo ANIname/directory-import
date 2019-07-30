@@ -1,0 +1,27 @@
+{
+  "name": "directory-import",
+  "version": "1.0.0",
+  "description": "Module sync or async import(requires) all modules from the folder you specify.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KiiDii/directory-import.git"
+  },
+  "keywords": [
+    "import",
+    "require",
+    "dir",
+    "directory",
+    "subdirectories",
+    "recursive"
+  ],
+  "author": "KiiDii <https:t.me/kiidii_aniname>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KiiDii/directory-import/issues"
+  },
+  "homepage": "https://github.com/KiiDii/directory-import#readme",
+  "dependencies": {
+    "recursive-dir-reader": "^1.1.2"
+  }
+}
