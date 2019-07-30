@@ -82,11 +82,11 @@ console.info(modules);
 // EX 5
 // The same as with the sync method above. 
 // However, modules load in order from fastest loaded to slowest loaded
-const filesIntoDirAsync = readdir.async('./someDir');
+const modules = importDir(`./someDir`, 'async');
 
 
 setTimeout(() => {
-  console.info(filesIntoDirAsync);
+  console.info(modules);
 }, 1000);
 ```
 You can easily combine this methods.
