@@ -23,7 +23,7 @@ const importDir = require('directory-import');
 
 // EX 1
 // Simple loading of all modules inside the directory and in all its subdirectories
-importDir(`./someDir`, sync);
+importDir(`./someDir`, 'sync');
 
 // EX 2
 // Loading and working with all modules inside the directory and in all its subdirectories
