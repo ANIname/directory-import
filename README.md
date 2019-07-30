@@ -68,9 +68,9 @@ importDir(`./someDir`, 'async', (name, path, func) => {
 
 // EX 4
 // Loading and storing modules in the object
-const modules = importDir(`./someDir`, 'sync');
+const modulesSync = importDir(`./someDir`, 'sync');
 
-console.info(modules);
+console.info(modulesSync);
 // { 
 //   someFile1: [Function],
 //   someFile2: [Function],
@@ -82,11 +82,11 @@ console.info(modules);
 // EX 5
 // The same as with the sync method above. 
 // However, modules load in order from fastest loaded to slowest loaded
-const modules = importDir(`./someDir`, 'async');
+const modulesAsync = importDir(`./someDir`, 'async');
 
 
 setTimeout(() => {
-  console.info(modules);
+  console.info(modulesAsync);
 }, 1000);
 ```
 You can easily combine this methods.
