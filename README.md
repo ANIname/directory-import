@@ -23,11 +23,11 @@ const importDir = require('directory-import');
 
 // EX 1
 // Simple loading of all modules inside the directory and in all its subdirectories
-importDir(`./someDir`, 'sync');
+importDir(`../someDir`, 'sync');
 
 // EX 2
 // Loading and working with all modules inside the directory and in all its subdirectories
-importDir(`./someDir`, 'sync', (name, path, func) => {
+importDir(`../someDir`, 'sync', (name, path, func) => {
   console.info(
     `name: ${name} \n` +
     `path: ${path} \n` +
@@ -35,30 +35,30 @@ importDir(`./someDir`, 'sync', (name, path, func) => {
   );
   
   // name: someFile1
-  // path: ./someDir/someFile1.js
+  // path: ../someDir/someFile1.js
   // func: () => console.info('this is some file 1')
   //
   // name: someFile2
-  // path: ./someDir/someFile2.js
+  // path: ../someDir/someFile2.js
   // func: () => console.info('this is some file 2')
   //
   // name: config
-  // path: ./someDir/config.json
+  // path: ../someDir/config.json
   // func: [object Object]
   //
   // name: someModule1
-  // path: ./someDir/someSubDir/someModule1.js
+  // path: ../someDir/someSubDir/someModule1.js
   // func: () => console.info('this is some module 1')
   //
   // name: someModule2
-  // path: ./someDir/someSubDir/someModule2.js
+  // path: ../someDir/someSubDir/someModule2.js
   // func: () => console.info('this is some module 2')
 });
 
 // EX 3
 // The same as with the sync method above. 
 // However, modules load in order from fastest loaded to slowest loaded
-importDir(`./someDir`, 'async', (name, path, func) => {
+importDir(`../someDir`, 'async', (name, path, func) => {
   console.info(
     `name: ${name} \n` +
     `path: ${path} \n` +
@@ -68,7 +68,7 @@ importDir(`./someDir`, 'async', (name, path, func) => {
 
 // EX 4
 // Loading and storing modules in the object
-const modulesSync = importDir(`./someDir`, 'sync');
+const modulesSync = importDir(`../someDir`, 'sync');
 
 console.info(modulesSync);
 // { 
@@ -82,7 +82,7 @@ console.info(modulesSync);
 // EX 5
 // The same as with the sync method above. 
 // However, modules load in order from fastest loaded to slowest loaded
-const modulesAsync = importDir(`./someDir`, 'async');
+const modulesAsync = importDir(`../someDir`, 'async');
 
 
 setTimeout(() => {
@@ -91,7 +91,7 @@ setTimeout(() => {
 ```
 You can easily combine this methods.
 ```javascript
-const modules = importDir(`./someDir`, 'sync', (name, path, func) => {
+const modules = importDir(`../someDir`, 'sync', (name, path, func) => {
   console.info(
     `name: ${name} \n` +
     `path: ${path} \n` +
@@ -99,23 +99,23 @@ const modules = importDir(`./someDir`, 'sync', (name, path, func) => {
   );
   
   // name: someFile1
-  // path: ./someDir/someFile1.js
+  // path: ../someDir/someFile1.js
   // func: () => console.info('this is some file 1')
   //
   // name: someFile2
-  // path: ./someDir/someFile2.js
+  // path: ../someDir/someFile2.js
   // func: () => console.info('this is some file 2')
   //
   // name: config
-  // path: ./someDir/config.json
+  // path: ../someDir/config.json
   // func: [object Object]
   //
   // name: someModule1
-  // path: ./someDir/someSubDir/someModule1.js
+  // path: ../someDir/someSubDir/someModule1.js
   // func: () => console.info('this is some module 1')
   //
   // name: someModule2
-  // path: ./someDir/someSubDir/someModule2.js
+  // path: ../someDir/someSubDir/someModule2.js
   // func: () => console.info('this is some module 2')
 });
 
