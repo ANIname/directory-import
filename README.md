@@ -1,5 +1,23 @@
-##### Module sync or async import(requires) all modules from the folder you specify.
-It's possible either to use modules from the returned object, or to execute a callback at each iteration
+<div align="center">
+  <p>
+    <img src="https://img.shields.io/node/v/directory-import" alt="Node version required">
+    <img src="https://img.shields.io/github/languages/code-size/KiiDii/directory-import" alt="GitHub code size">
+    <img src="https://img.shields.io/npm/dt/directory-import" alt="Downloads">
+    <a href="https://discord.gg/ADFYZtJ">
+      <img src="https://img.shields.io/discord/219557939466338304?label=Discord%20chat%20(rus)" alt="Discord server">
+    </a>
+  </p>
+  <p>
+    <a href="https://nodei.co/npm/directory-import">
+      <img src="https://nodei.co/npm/directory-import.png?compact=true">
+    </a>
+  </p>
+</div>
+
+## About
+The module will allow you to **sync** or **async** import(requires) all modules from the folder you specify.
+
+It's possible either to use modules from the returned object, or to execute a callback at each module
 
 ## Installation
 ```
@@ -128,3 +146,8 @@ console.info(modules);
 //   someModule2: [Function]
 // }
 ```
+
+## Help
+If you don't understand something in the documentation, you are experiencing problems, or you just need a gentle nudge in the right direction, please don't hesitate to join our official [Discord server](https://discord.gg/ADFYZtJ).
+
+Although the server was created for Russian speakers, you can also write in English! We will understand you!
