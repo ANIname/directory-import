@@ -1,6 +1,6 @@
 'use strict';
 
-const {parse} = require('path');
+const {parse, sep} = require('path');
 const readdir = require('recursive-dir-reader');
 
 /**
@@ -34,7 +34,7 @@ module.exports = (dir, method, callback = undefined) => {
       ext === '.json';
 
     if (notIgnoredExt) {
-      const func = require(`${process.cwd()}/${path}`);
+      const func = require([process.cwd(), path].join(sep));
 
       modules[name] = func;
 
