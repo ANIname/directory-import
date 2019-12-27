@@ -34,7 +34,7 @@ module.exports = (dir, method, callback = undefined) => {
       ext === '.json';
 
     if (notIgnoredExt) {
-      const func = require([process.cwd(), path].join(sep));
+      const func = require(`${process.cwd() + sep + path}`);
 
       modules[name] = func;
 
