@@ -36,7 +36,7 @@ module.exports = (dir, method, callback = undefined) => {
     if (notIgnoredExt) {
       const func = require(`${process.cwd()}/${path}`);
 
-      modules[name] = func;
+      modules[path] = func;
 
       if (callback) callback(name, path, func);
     }
