@@ -30,6 +30,7 @@ module.exports = (dir, method, callback = undefined) => {
   readdir[method](dir, path => {
     const {name, ext} = parse(path);
     const notIgnoredExt =
+      ext === '.ts' ||
       ext === '.js' ||
       ext === '.json';
 
