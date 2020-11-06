@@ -7,19 +7,19 @@ const defaultValues = require('../../config/default-values');
  *
  * You can use modules from the returned object, or you can invoke function per file
  *
- * {@link https://www.npmjs.com/package/directory-import#examples|Examples}
- * {@link https://www.npmjs.com/package/directory-import#examples|Sanbox}
- * {@link https://www.npmjs.com/package/directory-import#help|Need more help?}
+ * {@link https://www.npmjs.com/package/directory-import#more-examples|Examples}
+ * {@link https://npm.runkit.com/directory-import|Sanbox}
+ * {@link https://github.com/KiiDii/directory-import#help|Need more help?}
  *
  * @param {Object}           [options] Config options
- * @param {String}           [options.directoryPath]         {@link https://www.npmjs.com/package/directory-import#directoryPath|More}
- * @param {('sync'|'async')} [options.importMethod]          {@link https://www.npmjs.com/package/directory-import#importMethod|More}
- * @param {Boolean}          [options.includeSubdirectories] {@link https://www.npmjs.com/package/directory-import#includeSubdirectories|More}
- * @param {String}           [options.debug]                 {@link https://www.npmjs.com/package/directory-import#debug|More} // TODO
- * @param {Number}           [options.limit]                 {@link https://www.npmjs.com/package/directory-import#debug|More} // TODO
- * @param {RegExp}           [options.exclude]               {@link https://www.npmjs.com/package/directory-import#debug|More} // TODO
+ * @param {String}           [options.directoryPath]         {@link https://github.com/KiiDii/directory-import#object-options|More}
+ * @param {('sync'|'async')} [options.importMethod]          {@link https://github.com/KiiDii/directory-import#object-options|More}
+ * @param {Boolean}          [options.includeSubdirectories] {@link https://github.com/KiiDii/directory-import#object-options|More}
+ * @param {String}           [options.debug]                 {@link https://github.com/KiiDii/directory-import#object-options|More} // TODO
+ * @param {Number}           [options.limit]                 {@link https://github.com/KiiDii/directory-import#object-options|More} // TODO
+ * @param {RegExp}           [options.exclude]               {@link https://github.com/KiiDii/directory-import#object-options|More} // TODO
  *
- * @param {Function}         [callback] The function invoked per file {@link https://www.npmjs.com/package/directory-import#examplesWithCallback|Example}
+ * @param {Function}         [callback] The function invoked per file {@link https://www.npmjs.com/package/directory-import#you-can-invoke-callback-on-each-file|Example}
 
  * @returns {Object|Promise<Object>} imported modules
  *

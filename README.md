@@ -35,7 +35,7 @@ const importDir = require('directory-import');
 const importedModules = importDir({ directoryPath: './' });
 ```
 
-##Simple usage
+## Simple usage
 This is one simple example of how to use the library and how it works under the hood:
 ```javascript
 const importDir = require('directory-import');
@@ -46,9 +46,10 @@ console.info(importedModules);
 ```
 ![](media/directory-import-example.gif)
 
-###[Path to directory from GIF above][1]
+### [Path to directory from GIF above][1]
 
-You can invoke callback on each file. This can be useful when, for example, you need to do some action depending on the imported file.
+### You can invoke callback on each file
+This can be useful when, for example, you need to do some action depending on the imported file.
 ```javascript
 const importDir = require('directory-import');
 
@@ -79,9 +80,65 @@ ___
 
 ___
 ## More examples
-  //
+
+#### Minimum code to run modules that are in the same folder as the code below:
+```javascript
+const importDir = require('directory-import');
+
+importDir();
+```
+
+#### Async call:
+```javascript
+const importDir = require('directory-import');
+
+const importedModules = importDir({ importMethod: 'async', directoryPath: '../sample-directory' });
+
+// Promise { <pending> }
+console.info(importedModules);
+```
+
+#### Async call with callback:
+```javascript
+const importDir = require('directory-import');
+
+importDir({ importMethod: 'async', directoryPath: '../sample-directory' });
+```
+
+#### Put the result in a variable and invoke a callback for each module
+```javascript
+const importDir = require('directory-import');
+
+const importedModules = importDir({ directoryPath: '../sample-directory' }, (moduleName, modulePath, moduleData) => {
+  // {
+  //   moduleName: 'sample-file-1',
+  //   modulePath: '/sample-file-1.js',
+  //   moduleData: 'This is first sampleFile'
+  // }
+  // ...
+  console.info({ moduleName, modulePath, moduleData });
+});
+
+// {
+//   '/sample-file-1.js': 'This is first sampleFile',
+//   ...
+// }
+console.info(importedModules);
+```
+
+## Try this module online:
+<a href="https://npm.runkit.com/directory-import">
+  <img src="https://badge.runkitcdn.com/directory-import.svg" alt="Try directory-import on RunKit"/>
+</a>
+
 ## Contributing
   //
 
+## Help
+If you don't understand something in the documentation, you are experiencing problems, or you just need a gentle nudge in the right direction, please don't hesitate to join our official [Discord server][discordServer].
+
+Although the server was created for Russian speakers, you can also write in English! We will understand you!
+
 [1]: https://regex101.com/r/mp8lkk/1
+[discordServer]: https://discord.gg/ADFYZtJ
 [jsFileIcon]: https://www.flaticon.com/svg/static/icons/svg/2306/2306122.svg "Logo Title Text 2"
