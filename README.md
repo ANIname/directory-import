@@ -107,7 +107,15 @@ console.info(importedModules);
 ```javascript
 const importDir = require('directory-import');
 
-importDir({ importMethod: 'async', directoryPath: '../sample-directory' });
+importDir({ importMethod: 'async', directoryPath: '../sample-directory' }, (moduleName, modulePath, moduleData) => {
+  // {
+  //   moduleName: 'sample-file-1',
+  //   modulePath: '/sample-file-1.js',
+  //   moduleData: 'This is first sampleFile'
+  // }
+  // ...
+  console.info({ moduleName, modulePath, moduleData });
+});
 ```
 
 #### Put the result in a variable and invoke a callback for each module
@@ -135,9 +143,7 @@ ___
 <a href="https://npm.runkit.com/directory-import">
   <img src="https://badge.runkitcdn.com/directory-import.svg" alt="Try directory-import on RunKit"/>
 </a>
-___
-## Contributing
-  //
+
 ___
 ## Help
 If you don't understand something in the documentation, you are experiencing problems, or you just need a gentle nudge in the right direction, please don't hesitate to join our official [Discord server][discordServer].
