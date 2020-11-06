@@ -1,14 +1,17 @@
 {
   "name": "directory-import",
-  "version": "1.2.1",
-  "description": "Module sync or async import(requires) all modules from the folder you specify.",
-  "main": "index.js",
+  "version": "2.0.0",
+  "description": "Module will allow you to synchronously or asynchronously import (requires) all modules from the folder you specify",
+  "main": "src/directory-import",
+  "scripts": {
+    "start": "node src/directory-import"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/KiiDii/directory-import.git"
   },
   "engines": {
-    "node": ">=7.10.1"
+    "node": ">=8.0.0"
   },
   "keywords": [
     "import",
@@ -16,15 +19,31 @@
     "dir",
     "directory",
     "subdirectories",
-    "recursive"
+    "recursive",
+    "module",
+    "modules"
   ],
-  "author": "KiiDii <https:t.me/kiidii_aniname>",
+  "author": "KiiDii <kiidii@aniname.com>",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/KiiDii/directory-import/issues"
   },
   "homepage": "https://github.com/KiiDii/directory-import#readme",
   "dependencies": {
-    "recursive-dir-reader": "^1.1.2"
+    "bluebird": "^3.7.2",
+    "lodash.foreach": "^4.5.0",
+    "lodash.merge": "^4.6.2"
+  },
+  "devDependencies": {
+    "eslint": "^7.10.0",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jest": "^24.1.0",
+    "eslint-plugin-no-loops": "^0.3.0",
+    "eslint-plugin-no-use-extend-native": "^0.5.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-optimize-regex": "^1.2.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-sonarjs": "^0.5.0"
   }
 }

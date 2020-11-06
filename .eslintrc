@@ -1,0 +1,37 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 2020
+  },
+  "env": {
+    "node": true,
+    "es6": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:import/errors",
+    "plugin:import/warnings",
+    "plugin:node/recommended",
+    "plugin:sonarjs/recommended",
+    "airbnb-base"
+  ],
+  "plugins": [
+    "node",
+    "sonarjs",
+    "promise",
+    "no-loops",
+    "optimize-regex",
+    "no-use-extend-native"
+  ],
+  "rules": {
+    "no-multi-spaces": "off",
+    "brace-style": ["error", "stroustrup"],
+    "no-param-reassign": ["error", { "props": false }],
+    "global-require": "off",
+    "import/no-dynamic-require": "off",
+    "key-spacing": ["error", { "align": "value" }],
+    "max-len": ["error", { "code": 120, "ignoreComments": true }],
+    "no-use-before-define": ["error", { "functions": false }],
+    "import/no-extraneous-dependencies": "off",
+    "node/no-extraneous-require": "off"
+  }
+}
