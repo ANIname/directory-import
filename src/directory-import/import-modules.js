@@ -6,7 +6,7 @@ const asyncDirectoryReader  = require('./directory-reader-async');
 const validImportExtensions = require('../../config/valid-import-extensions');
 
 function importModules(args, callback) {
-  const { directoryPath, importMethod, includeSubdirectories } = args;
+  const { directoryPath, importMethod } = args;
 
   const modules = {};
 
@@ -20,7 +20,7 @@ function importModules(args, callback) {
   return handlers[importMethod]();
 
   function syncHandler() {
-    const filesPaths = syncDirectoryReader(absoluteDirectoryPath, includeSubdirectories);
+    const filesPaths = syncDirectoryReader(args);
 
     lodashEach(filesPaths, importModule);
 
@@ -28,7 +28,7 @@ function importModules(args, callback) {
   }
 
   async function asyncHandler() {
-    const filesPaths = await asyncDirectoryReader(absoluteDirectoryPath, includeSubdirectories);
+    const filesPaths = await asyncDirectoryReader(args);
 
     await Promise.each(filesPaths, importModule);
 

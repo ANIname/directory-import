@@ -72,7 +72,6 @@ ___
 | directoryPath          | String   | "./"          | Relative path to directory                                    | 
 | importMethod           | String   | "sync"        | Import files synchronously, or asynchronously                 |
 | includeSubdirectories  | Boolean  | true          | If false — files in subdirectories will not be imported       |
-| debug                  | Boolean  | false         | If true - imported files will be logged in the terminal       |
 | limit                  | Number   | 0             | Indicates how many files to import. 0 - to disable the limit  |
 | exclude                | RegExp   | undefined     | Exclude files paths. [Example][1]                             |
 
