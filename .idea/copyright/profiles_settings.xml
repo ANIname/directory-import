@@ -1,0 +1,15 @@
+<component name="CopyrightManager">
+  <settings>
+    <LanguageOptions name="JavaScript">
+      <option name="separateBefore" value="true" />
+      <option name="separateAfter" value="true" />
+      <option name="lenBefore" value="120" />
+      <option name="lenAfter" value="120" />
+      <option name="box" value="true" />
+    </LanguageOptions>
+    <LanguageOptions name="__TEMPLATE__">
+      <option name="box" value="true" />
+      <option name="filler" value="=" />
+    </LanguageOptions>
+  </settings>
+</component>
