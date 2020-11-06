@@ -1,5 +1,5 @@
 {
-  "directoryPath":         "./",
+  "directoryPath":         ".",
   "importMethod":          "sync",
   "includeSubdirectories": true,
   "debug":                 false,
