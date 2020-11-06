@@ -34,7 +34,7 @@ const importDir = require('directory-import');
 // Returns: { filePath1: fileData1, filePath2: fileData2, ... },
 const importedModules = importDir({ directoryPath: './' });
 ```
-
+___
 ## Simple usage
 This is one simple example of how to use the library and how it works under the hood:
 ```javascript
@@ -44,7 +44,9 @@ const importedModules = importDir({ directoryPath: '../sample-directory' });
 
 console.info(importedModules);
 ```
-![](media/directory-import-example.gif)
+<a href="https://github.com/KiiDii/directory-import/blob/reboot/media/directory-import-example.gif">
+  <img src="https://github.com/KiiDii/directory-import/blob/reboot/media/directory-import-example.gif?raw=true" alt="GIF how it works under the hood">
+</a>
 
 ### [Path to directory from GIF above][1]
 
@@ -57,7 +59,10 @@ importDir({ directoryPath: '../sample-directory' }, (moduleName, modulePath, mod
   console.info({ moduleName, modulePath, moduleData });
 });
 ```
-![](media/directory-import-example-with-callback.gif)
+<a href="https://github.com/KiiDii/directory-import/blob/reboot/media/directory-import-example-with-callback.gif">
+  <img src="https://github.com/KiiDii/directory-import/blob/reboot/media/directory-import-example-with-callback.gif?raw=true" alt="GIF how it works under the hood">
+</a>
+
 ___
 ## Params
 
@@ -125,15 +130,15 @@ const importedModules = importDir({ directoryPath: '../sample-directory' }, (mod
 // }
 console.info(importedModules);
 ```
-
+___
 ## Try this module online:
 <a href="https://npm.runkit.com/directory-import">
   <img src="https://badge.runkitcdn.com/directory-import.svg" alt="Try directory-import on RunKit"/>
 </a>
-
+___
 ## Contributing
   //
-
+___
 ## Help
 If you don't understand something in the documentation, you are experiencing problems, or you just need a gentle nudge in the right direction, please don't hesitate to join our official [Discord server][discordServer].
 
