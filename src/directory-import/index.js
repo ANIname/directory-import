@@ -16,7 +16,7 @@ const defaultValues = require('../../config/default-values');
  * @param {('sync'|'async')} [options.importMethod]          {@link https://github.com/KiiDii/directory-import#object-options|More}
  * @param {Boolean}          [options.includeSubdirectories] {@link https://github.com/KiiDii/directory-import#object-options|More}
  * @param {Number}           [options.limit]                 {@link https://github.com/KiiDii/directory-import#object-options|More}
- * @param {RegExp}           [options.exclude]               {@link https://github.com/KiiDii/directory-import#object-options|More} // TODO
+ * @param {RegExp}           [options.exclude]               {@link https://github.com/KiiDii/directory-import#object-options|More}
  *
  * @param {Function}         [callback] The function invoked per file {@link https://www.npmjs.com/package/directory-import#you-can-invoke-callback-on-each-file|Example}
 

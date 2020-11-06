@@ -6,7 +6,7 @@ const asyncDirectoryReader  = require('./directory-reader-async');
 const validImportExtensions = require('../../config/valid-import-extensions');
 
 function importModules(args, callback) {
-  const { directoryPath, importMethod } = args;
+  const { directoryPath, importMethod, exclude } = args;
 
   const modules = {};
 
@@ -41,12 +41,16 @@ function importModules(args, callback) {
 
     if (isValidExtension) {
       const relativeModulePath = filePath.slice(absoluteDirectoryPath.length);
-      const importedModuleData = require(filePath);
+      const fileIsNotExcluded  = !exclude.test(relativeModulePath);
 
-      modules[relativeModulePath] = importedModuleData;
+      if (fileIsNotExcluded) {
+        const importedModuleData = require(filePath);
 
-      if (callback) {
-        callback(fileName, relativeModulePath, importedModuleData);
+        modules[relativeModulePath] = importedModuleData;
+
+        if (callback) {
+          callback(fileName, relativeModulePath, importedModuleData);
+        }
       }
     }
   }

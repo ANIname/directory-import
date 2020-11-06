@@ -137,6 +137,13 @@ const importedModules = importDir({ directoryPath: '../sample-directory' }, (mod
 // }
 console.info(importedModules);
 ```
+
+#### Exclude .json extension
+```javascript
+const result = directoryImport({ directoryPath: '../sample-directory', exclude: /.json$/g });
+
+console.info(result);
+```
 ___
 ## Try this module online:
 <a href="https://npm.runkit.com/directory-import">
@@ -146,6 +153,10 @@ ___
 ___
 ## Help
 If you don't understand something in the documentation, you are experiencing problems, or you just need a gentle nudge in the right direction, please don't hesitate to join our official [Discord server][discordServer].
+
+<a href="https://discord.gg/ADFYZtJ">
+  <img src="https://img.shields.io/discord/219557939466338304?label=Discord%20chat%20(rus)" alt="Discord server">
+</a>
 
 Although the server was created for Russian speakers, you can also write in English! We will understand you!
 
