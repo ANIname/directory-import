@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 8
           registry-url: https://registry.npmjs.org/
-      - run: npm ci
+      - run: npm install --only=prod
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
@@ -37,7 +37,7 @@ jobs:
         with:
           node-version: 8
           registry-url: https://npm.pkg.github.com/
-      - run: npm ci
+      - run: npm install --only=prod
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
