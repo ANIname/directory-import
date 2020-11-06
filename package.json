@@ -1,6 +1,6 @@
 {
   "name": "directory-import",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "Module will allow you to synchronously or asynchronously import (requires) all modules from the folder you specify",
   "main": "src/directory-import",
   "scripts": {
