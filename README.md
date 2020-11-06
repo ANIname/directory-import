@@ -44,8 +44,8 @@ const importedModules = importDir({ directoryPath: '../sample-directory' });
 
 console.info(importedModules);
 ```
-<a href="https://github.com/KiiDii/directory-import/blob/reboot/media/directory-import-example.gif">
-  <img src="https://github.com/KiiDii/directory-import/blob/reboot/media/directory-import-example.gif?raw=true" alt="GIF how it works under the hood">
+<a href="https://github.com/KiiDii/directory-import/blob/master/media/directory-import-example.gif">
+  <img src="https://github.com/KiiDii/directory-import/blob/master/media/directory-import-example.gif?raw=true" alt="GIF how it works under the hood">
 </a>
 
 ### [Path to directory from GIF above][1]
@@ -59,8 +59,8 @@ importDir({ directoryPath: '../sample-directory' }, (moduleName, modulePath, mod
   console.info({ moduleName, modulePath, moduleData });
 });
 ```
-<a href="https://github.com/KiiDii/directory-import/blob/reboot/media/directory-import-example-with-callback.gif">
-  <img src="https://github.com/KiiDii/directory-import/blob/reboot/media/directory-import-example-with-callback.gif?raw=true" alt="GIF how it works under the hood">
+<a href="https://github.com/KiiDii/directory-import/blob/master/media/directory-import-example-with-callback.gif">
+  <img src="https://github.com/KiiDii/directory-import/blob/master/media/directory-import-example-with-callback.gif?raw=true" alt="GIF how it works under the hood">
 </a>
 
 ___
