@@ -5,13 +5,13 @@ const { readdirSync, statSync } = fs;
 
 function directoryReaderSync(options) {
   const {
-    absoluteDirectoryPath,
+    targetDirectoryPath,
     lastSubDirectoryPath,
     includeSubdirectories,
     limit,
   } = options;
 
-  const directoryPath = lastSubDirectoryPath || absoluteDirectoryPath;
+  const directoryPath = lastSubDirectoryPath || targetDirectoryPath;
 
   if (typeof options.receivedFilesLength !== 'number') {
     options.receivedFilesLength = 0;

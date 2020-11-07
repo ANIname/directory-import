@@ -6,7 +6,7 @@ const asyncDirectoryReader  = require('./directory-reader-async');
 const validImportExtensions = require('../config/valid-import-extensions.json');
 
 function importModules(args, callback) {
-  const { absoluteDirectoryPath, importMethod, exclude } = args;
+  const { targetDirectoryPath, importMethod, exclude } = args;
 
   const modules = {};
 
@@ -42,7 +42,7 @@ function importModules(args, callback) {
       return;
     }
 
-    const relativeModulePath = filePath.slice(absoluteDirectoryPath.length);
+    const relativeModulePath = filePath.slice(targetDirectoryPath.length);
     const excludeSpecified   = typeof exclude.test === 'function';
 
     if (excludeSpecified) {

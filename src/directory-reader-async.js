@@ -7,13 +7,13 @@ const statAsync    = util.promisify(fs.stat);
 
 async function directoryReaderAsync(options) {
   const {
-    absoluteDirectoryPath,
+    targetDirectoryPath,
     lastSubDirectoryPath,
     includeSubdirectories,
     limit,
   } = options;
 
-  const directoryPath = lastSubDirectoryPath || absoluteDirectoryPath;
+  const directoryPath = lastSubDirectoryPath || targetDirectoryPath;
 
   if (typeof options.receivedFilesLength !== 'number') {
     options.receivedFilesLength = 0;
