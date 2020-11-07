@@ -23,6 +23,8 @@
     "no-use-extend-native"
   ],
   "rules": {
+    "no-throw-literal": "off",
+    "consistent-return": "off",
     "no-multi-spaces": "off",
     "brace-style": ["error", "stroustrup"],
     "no-param-reassign": ["error", { "props": false }],

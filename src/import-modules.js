@@ -3,15 +3,14 @@ const lodashEach            = require('lodash.foreach');
 const Promise               = require('bluebird');
 const syncDirectoryReader   = require('./directory-reader-sync');
 const asyncDirectoryReader  = require('./directory-reader-async');
-const validImportExtensions = require('../../config/valid-import-extensions');
+const validImportExtensions = require('../config/valid-import-extensions.json');
 
 function importModules(args, callback) {
-  const { directoryPath, importMethod, exclude } = args;
+  const { absoluteDirectoryPath, importMethod, exclude } = args;
 
   const modules = {};
 
-  const absoluteDirectoryPath = path.resolve(module.parent.path, directoryPath);
-  const handlers              = { sync: syncHandler, async: asyncHandler };
+  const handlers = { sync: syncHandler, async: asyncHandler };
 
   if (!handlers[importMethod]) {
     throw new Error(`Expected sync or async import method, but got: ${importMethod}`);
@@ -39,19 +38,27 @@ function importModules(args, callback) {
     const { name: fileName, ext: fileExtension } = path.parse(filePath);
     const isValidExtension                       = validImportExtensions[fileExtension];
 
-    if (isValidExtension) {
-      const relativeModulePath = filePath.slice(absoluteDirectoryPath.length);
-      const fileIsNotExcluded  = !exclude.test(relativeModulePath);
+    if (!isValidExtension) {
+      return;
+    }
 
-      if (fileIsNotExcluded) {
-        const importedModuleData = require(filePath);
+    const relativeModulePath = filePath.slice(absoluteDirectoryPath.length);
+    const excludeSpecified   = typeof exclude.test === 'function';
 
-        modules[relativeModulePath] = importedModuleData;
+    if (excludeSpecified) {
+      const fileIsNotExcluded = !exclude.test(relativeModulePath);
 
-        if (callback) {
-          callback(fileName, relativeModulePath, importedModuleData);
-        }
+      if (!fileIsNotExcluded) {
+        return;
       }
+    }
+
+    const importedModuleData = require(filePath);
+
+    modules[relativeModulePath] = importedModuleData;
+
+    if (callback) {
+      callback(fileName, relativeModulePath, importedModuleData);
     }
   }
 }

@@ -1,11 +1,17 @@
-const path    = require('path');
 const fs      = require('fs');
 const forEach = require('lodash.foreach');
 
 const { readdirSync, statSync } = fs;
 
 function directoryReaderSync(options) {
-  const { directoryPath, includeSubdirectories, limit } = options;
+  const {
+    absoluteDirectoryPath,
+    lastSubDirectoryPath,
+    includeSubdirectories,
+    limit,
+  } = options;
+
+  const directoryPath = lastSubDirectoryPath || absoluteDirectoryPath;
 
   if (typeof options.receivedFilesLength !== 'number') {
     options.receivedFilesLength = 0;
@@ -16,7 +22,7 @@ function directoryReaderSync(options) {
   const receivedFiles       = [];
 
   forEach(receivedItems, (receivedItemName) => {
-    const itemPath    = path.resolve(`${directoryPath}/${receivedItemName}`);
+    const itemPath    = `${directoryPath}/${receivedItemName}`;
     const status      = statSync(itemPath);
     const isDirectory = status.isDirectory();
 
@@ -30,6 +36,7 @@ function directoryReaderSync(options) {
       options.receivedFilesLength += 1;
     }
 
+    // Stop loop if module limit is reached
     if (options.limit && options.receivedFilesLength >= limit) {
       return false;
     }
@@ -37,11 +44,12 @@ function directoryReaderSync(options) {
 
   if (includeSubdirectories) {
     forEach(receivedDirectories, (receivedDirectoryPath) => {
+      // Stop loop if module limit is reached
       if (options.limit && options.receivedFilesLength >= limit) {
         return false;
       }
 
-      options.directoryPath = receivedDirectoryPath;
+      options.lastSubDirectoryPath = receivedDirectoryPath;
 
       const files = directoryReaderSync(options);
 

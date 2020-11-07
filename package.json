@@ -2,9 +2,9 @@
   "name": "directory-import",
   "version": "2.1.0",
   "description": "Module will allow you to synchronously or asynchronously import (requires) all modules from the folder you specify",
-  "main": "src/directory-import",
+  "main": "src",
   "scripts": {
-    "start": "node src/directory-import"
+    "start": "node src"
   },
   "repository": {
     "type": "git",

@@ -28,8 +28,9 @@ ___
 npm i directory-import
 ```
 After install, you can require module and import files:
+
 ```javascript
-const importDir = require('directory-import');
+const importDir = require('index');
 
 // Returns: { filePath1: fileData1, filePath2: fileData2, ... },
 const importedModules = importDir({ directoryPath: './' });
@@ -37,8 +38,9 @@ const importedModules = importDir({ directoryPath: './' });
 ___
 ## Simple usage
 This is one simple example of how to use the library and how it works under the hood:
+
 ```javascript
-const importDir = require('directory-import');
+const importDir = require('index');
 
 const importedModules = importDir({ directoryPath: '../sample-directory' });
 
@@ -52,8 +54,9 @@ console.info(importedModules);
 
 ### You can invoke callback on each file
 This can be useful when, for example, you need to do some action depending on the imported file.
+
 ```javascript
-const importDir = require('directory-import');
+const importDir = require('index');
 
 importDir({ directoryPath: '../sample-directory' }, (moduleName, modulePath, moduleData) => {
   console.info({ moduleName, modulePath, moduleData });
@@ -86,6 +89,7 @@ ___
 ## More examples
 
 #### Minimum code to run modules that are in the same folder as the code below:
+
 ```javascript
 const importDir = require('directory-import');
 
@@ -93,6 +97,7 @@ importDir();
 ```
 
 #### Async call:
+
 ```javascript
 const importDir = require('directory-import');
 
@@ -103,6 +108,7 @@ console.info(importedModules);
 ```
 
 #### Async call with callback:
+
 ```javascript
 const importDir = require('directory-import');
 
@@ -118,6 +124,7 @@ importDir({ importMethod: 'async', directoryPath: '../sample-directory' }, (modu
 ```
 
 #### Put the result in a variable and invoke a callback for each module
+
 ```javascript
 const importDir = require('directory-import');
 
@@ -140,7 +147,9 @@ console.info(importedModules);
 
 #### Exclude .json extension
 ```javascript
-const result = directoryImport({ directoryPath: '../sample-directory', exclude: /.json$/g });
+const importDir = require('directory-import');
+
+const result = importDir({ directoryPath: '../sample-directory', exclude: /.json$/g });
 
 console.info(result);
 ```
