@@ -1,6 +1,8 @@
+const callsites     = require('callsites');
+const path          = require('path');
 const merge         = require('lodash.merge');
 const importModules = require('./import-modules');
-const defaultValues = require('../../config/default-values');
+const defaultValues = require('../config/default-values.json');
 
 /**
  * Module will allow you to synchronously or asynchronously import (requires) all modules from the folder you specify.
@@ -25,7 +27,10 @@ const defaultValues = require('../../config/default-values');
  * @author KiiDii <kiidii@aniname.com>
  */
 function directoryImport(options = {}, callback) {
-  const args = merge(defaultValues, options);
+  const args = merge({ ...defaultValues }, options);
+
+  args.absoluteDirectoryPath = path.dirname(callsites()[1].getFileName());
+  args.targetDirectoryPath   = path.resolve(args.absoluteDirectoryPath, args.directoryPath);
 
   return importModules(args, callback);
 }

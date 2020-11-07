@@ -1,5 +1,4 @@
 const fs      = require('fs');
-const path    = require('path');
 const util    = require('util');
 const Promise = require('bluebird');
 
@@ -7,7 +6,14 @@ const readdirAsync = util.promisify(fs.readdir);
 const statAsync    = util.promisify(fs.stat);
 
 async function directoryReaderAsync(options) {
-  const { directoryPath, includeSubdirectories, limit } = options;
+  const {
+    targetDirectoryPath,
+    lastSubDirectoryPath,
+    includeSubdirectories,
+    limit,
+  } = options;
+
+  const directoryPath = lastSubDirectoryPath || targetDirectoryPath;
 
   if (typeof options.receivedFilesLength !== 'number') {
     options.receivedFilesLength = 0;
@@ -18,7 +24,7 @@ async function directoryReaderAsync(options) {
   const receivedFiles       = [];
 
   await Promise.each(receivedItems, async (receivedItemName) => {
-    const itemPath    = path.resolve(`${directoryPath}/${receivedItemName}`);
+    const itemPath    = `${directoryPath}/${receivedItemName}`;
     const status      = await statAsync(itemPath);
     const isDirectory = status.isDirectory();
 
@@ -32,6 +38,7 @@ async function directoryReaderAsync(options) {
       options.receivedFilesLength += 1;
     }
 
+    // Stop loop if module limit is reached
     if (options.limit && options.receivedFilesLength >= limit) {
       throw { code: 'filesLimitReached' };
     }
@@ -39,11 +46,12 @@ async function directoryReaderAsync(options) {
 
   if (includeSubdirectories) {
     await Promise.each(receivedDirectories, async (receivedDirectoryPath) => {
+      // Stop loop if module limit is reached
       if (options.limit && options.receivedFilesLength >= limit) {
         throw { code: 'filesLimitReached' };
       }
 
-      options.directoryPath = receivedDirectoryPath;
+      options.lastSubDirectoryPath = receivedDirectoryPath;
 
       const files = await directoryReaderAsync(options);
 
