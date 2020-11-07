@@ -7,9 +7,6 @@
     <a href="https://discord.gg/ADFYZtJ">
       <img src="https://img.shields.io/discord/219557939466338304?label=Discord%20chat%20(rus)" alt="Discord server">
     </a>
-    <a href="https://npm.runkit.com/directory-import">
-      <img src="https://badge.runkitcdn.com/directory-import.svg" alt="Try directory-import on RunKit"/>
-    </a>
   </p>
   <p>
     <a href="https://nodei.co/npm/directory-import">
@@ -153,11 +150,6 @@ const result = importDir({ directoryPath: '../sample-directory', exclude: /.json
 
 console.info(result);
 ```
-___
-## Try this module online:
-<a href="https://npm.runkit.com/directory-import">
-  <img src="https://badge.runkitcdn.com/directory-import.svg" alt="Try directory-import on RunKit"/>
-</a>
 
 ___
 ## Help
