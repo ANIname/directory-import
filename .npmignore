@@ -1,9 +1,11 @@
 .editorconfig
 .gitattributes
 .git
+.idea
 .DS_Store
 .gitignore
 .github
+.eslintrc
 .nyc_output
 coverage/
 tools/
@@ -15,5 +17,7 @@ CONTRIBUTING.md
 media
 sample-directory
 test
+
+README.md
 
 package-lock.json
