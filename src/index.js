@@ -17,6 +17,7 @@ const defaultValues = require('../config/default-values.json');
  * @param {String}           [options.directoryPath]         {@link https://github.com/KiiDii/directory-import#object-options|More}
  * @param {('sync'|'async')} [options.importMethod]          {@link https://github.com/KiiDii/directory-import#object-options|More}
  * @param {Boolean}          [options.includeSubdirectories] {@link https://github.com/KiiDii/directory-import#object-options|More}
+ * @param {Boolean}          [options.webpack]               {@link https://github.com/KiiDii/directory-import#object-options|More}
  * @param {Number}           [options.limit]                 {@link https://github.com/KiiDii/directory-import#object-options|More}
  * @param {RegExp}           [options.exclude]               {@link https://github.com/KiiDii/directory-import#object-options|More}
  *
@@ -30,7 +31,11 @@ function directoryImport(options = {}, callback) {
   const args = merge({ ...defaultValues }, options);
 
   args.absoluteDirectoryPath = path.dirname(callsites()[1].getFileName());
-  args.targetDirectoryPath   = path.resolve(args.absoluteDirectoryPath, args.directoryPath);
+  args.targetDirectoryPath   = args.webpack
+    ? options.directoryPath
+    : path.resolve(args.absoluteDirectoryPath, args.directoryPath);
+
+  args.rootDirectoryName = args.targetDirectoryPath.split('/', 2)[1];
 
   return importModules(args, callback);
 }

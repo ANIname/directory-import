@@ -5,9 +5,11 @@ const { readdirSync, statSync } = fs;
 
 function directoryReaderSync(options) {
   const {
+    rootDirectoryName,
     targetDirectoryPath,
     lastSubDirectoryPath,
     includeSubdirectories,
+    webpack,
     limit,
   } = options;
 
@@ -31,7 +33,9 @@ function directoryReaderSync(options) {
     }
 
     else {
-      receivedFiles.push(itemPath);
+      const filePath = webpack ? itemPath.replace(`./${rootDirectoryName}/`, '') : itemPath;
+
+      receivedFiles.push(filePath);
 
       options.receivedFilesLength += 1;
     }

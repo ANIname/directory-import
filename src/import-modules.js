@@ -6,7 +6,12 @@ const asyncDirectoryReader  = require('./directory-reader-async');
 const validImportExtensions = require('../config/valid-import-extensions.json');
 
 function importModules(args, callback) {
-  const { targetDirectoryPath, importMethod, exclude } = args;
+  const {
+    targetDirectoryPath,
+    importMethod,
+    exclude,
+    webpack,
+  } = args;
 
   const modules = {};
 
@@ -42,8 +47,11 @@ function importModules(args, callback) {
       return;
     }
 
-    const relativeModulePath = filePath.slice(targetDirectoryPath.length);
-    const excludeSpecified   = typeof exclude.test === 'function';
+    const relativeModulePath = webpack
+      ? `./functions/${filePath}`.slice(targetDirectoryPath.length)
+      : filePath.slice(targetDirectoryPath.length);
+
+    const excludeSpecified = typeof exclude.test === 'function';
 
     if (excludeSpecified) {
       const fileIsNotExcluded = !exclude.test(relativeModulePath);
@@ -53,7 +61,9 @@ function importModules(args, callback) {
       }
     }
 
-    const importedModuleData = require(filePath);
+    const importedModuleData = webpack
+      ? require(`functions/` + filePath)
+      : require(filePath);
 
     modules[relativeModulePath] = importedModuleData;
 

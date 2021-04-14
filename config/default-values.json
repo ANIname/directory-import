@@ -3,5 +3,6 @@
   "importMethod":          "sync",
   "includeSubdirectories": true,
   "debug":                 false,
+  "webpack":               false,
   "exclude":               ""
 }

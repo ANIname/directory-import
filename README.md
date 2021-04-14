@@ -47,7 +47,7 @@ console.info(importedModules);
   <img src="https://github.com/KiiDii/directory-import/blob/master/media/directory-import-example.gif?raw=true" alt="GIF how it works under the hood">
 </a>
 
-### [Path to directory from GIF above][1]
+### [Path to directory from GIF above][pathToDirectoryFromGif]
 
 ### You can invoke callback on each file
 This can be useful when, for example, you need to do some action depending on the imported file.
@@ -72,8 +72,9 @@ ___
 | directoryPath          | String   | "./"          | Relative path to directory                                    | 
 | importMethod           | String   | "sync"        | Import files synchronously, or asynchronously                 |
 | includeSubdirectories  | Boolean  | true          | If false — files in subdirectories will not be imported       |
+| webpack                | Boolean  | false         | Webpack support. [Example using][webpackExample]                            |
 | limit                  | Number   | 0             | Indicates how many files to import. 0 - to disable the limit  |
-| exclude                | RegExp   | undefined     | Exclude files paths. [Example][1]                             |
+| exclude                | RegExp   | undefined     | Exclude files paths. [Example][regex101]                      |
 
 ### {Function} Callback:
 | Property |   Type   |     Description     |
@@ -151,6 +152,19 @@ const result = importDir({ directoryPath: '../sample-directory', exclude: /.json
 console.info(result);
 ```
 
+#### using with webpack
+```javascript
+// You must specify the node_modules dir. Otherwise webpak will generate an error
+const importDir = require('node_modules/directory-import');
+// or const importDir = require('../node_modules/directory-import');
+
+// You must specify the path from the root directory.
+// And also indicate that we want to work with the webpack (webpack: true)
+const result = importDir({ directoryPath: './sample-directory', webpack: true });
+
+console.info(result);
+```
+
 ___
 ## Help
 If you don't understand something in the documentation, you are experiencing problems, or you just need a gentle nudge in the right direction, please don't hesitate to join our official [Discord server][discordServer].
@@ -161,6 +175,8 @@ If you don't understand something in the documentation, you are experiencing pro
 
 Although the server was created for Russian speakers, you can also write in English! We will understand you!
 
-[1]: https://regex101.com/r/mp8lkk/1
+[pathToDirectoryFromGif]: https://github.com/KiiDii/directory-import/tree/master/sample-directory
+[regex101]: https://regex101.com/r/mp8lkk/1
+[webpackExample]: https://github.com/KiiDii/directory-import#using-with-webpack
 [discordServer]: https://discord.gg/ADFYZtJ
 [jsFileIcon]: https://www.flaticon.com/svg/static/icons/svg/2306/2306122.svg "Logo Title Text 2"

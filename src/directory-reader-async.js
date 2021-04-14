@@ -7,9 +7,11 @@ const statAsync    = util.promisify(fs.stat);
 
 async function directoryReaderAsync(options) {
   const {
+    rootDirectoryName,
     targetDirectoryPath,
     lastSubDirectoryPath,
     includeSubdirectories,
+    webpack,
     limit,
   } = options;
 
@@ -33,7 +35,9 @@ async function directoryReaderAsync(options) {
     }
 
     else {
-      receivedFiles.push(itemPath);
+      const filePath = webpack ? itemPath.replace(`./${rootDirectoryName}/`, '') : itemPath;
+
+      receivedFiles.push(filePath);
 
       options.receivedFilesLength += 1;
     }
