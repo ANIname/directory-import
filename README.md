@@ -27,7 +27,7 @@ npm i directory-import
 After install, you can require module and import files:
 
 ```javascript
-const importDir = require('index');
+const importDir = require('directory-import');
 
 // Returns: { filePath1: fileData1, filePath2: fileData2, ... },
 const importedModules = importDir({ directoryPath: './' });
@@ -37,7 +37,7 @@ ___
 This is one simple example of how to use the library and how it works under the hood:
 
 ```javascript
-const importDir = require('index');
+const importDir = require('directory-import');
 
 const importedModules = importDir({ directoryPath: '../sample-directory' });
 
@@ -53,7 +53,7 @@ console.info(importedModules);
 This can be useful when, for example, you need to do some action depending on the imported file.
 
 ```javascript
-const importDir = require('index');
+const importDir = require('directory-import');
 
 importDir({ directoryPath: '../sample-directory' }, (moduleName, modulePath, moduleData) => {
   console.info({ moduleName, modulePath, moduleData });
@@ -69,7 +69,7 @@ ___
 ### {Object} Options:
 |        Property        |   Type   | Default value |                          Description                          |
 |------------------------|----------|---------------|---------------------------------------------------------------|
-| directoryPath          | String   | "./"          | Relative path to directory                                    | 
+| directoryPath          | String   | "./"          | Relative path to directory                                    |
 | importMethod           | String   | "sync"        | Import files synchronously, or asynchronously                 |
 | includeSubdirectories  | Boolean  | true          | If false — files in subdirectories will not be imported       |
 | webpack                | Boolean  | false         | Webpack support. [Example using][webpackExample]                            |
