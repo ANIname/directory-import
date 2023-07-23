@@ -1,40 +1,51 @@
 {
+  "parser": "@typescript-eslint/parser",
+
   "parserOptions": {
-    "ecmaVersion": 2020
+    "project": "./tsconfig.json"
   },
-  "env": {
-    "node": true,
-    "es6":  true,
-    "jest": true
-  },
+
+  "plugins": [
+    "@typescript-eslint",
+    "jsdoc",
+    "sonarjs",
+    "security",
+    "promise",
+    "unicorn",
+    "eslint-comments",
+    "optimize-regex",
+    "no-use-extend-native",
+    "simple-import-sort",
+    "prettier"
+  ],
+
   "extends": [
     "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
     "plugin:import/errors",
     "plugin:import/warnings",
-    "plugin:node/recommended",
+    "plugin:import/typescript",
+    "plugin:jsdoc/recommended",
     "plugin:sonarjs/recommended",
-    "airbnb-base"
+    "plugin:security/recommended",
+    "plugin:promise/recommended",
+    "plugin:unicorn/recommended",
+    "plugin:eslint-comments/recommended",
+    "plugin:optimize-regex/recommended",
+    "plugin:no-use-extend-native/recommended",
+    "eslint-config-prettier",
+    "prettier"
   ],
-  "plugins": [
-    "node",
-    "sonarjs",
-    "promise",
-    "no-loops",
-    "optimize-regex",
-    "no-use-extend-native"
-  ],
+
   "rules": {
-    "no-throw-literal": "off",
-    "consistent-return": "off",
-    "no-multi-spaces": "off",
-    "brace-style": ["error", "stroustrup"],
-    "no-param-reassign": ["error", { "props": false }],
-    "global-require": "off",
-    "import/no-dynamic-require": "off",
-    "key-spacing": ["error", { "align": "value" }],
-    "max-len": ["error", { "code": 120, "ignoreComments": true }],
-    "no-use-before-define": ["error", { "functions": false }],
-    "import/no-extraneous-dependencies": "off",
-    "node/no-extraneous-require": "off"
+    "prettier/prettier": "error",
+    "simple-import-sort/imports": "error",
+    "simple-import-sort/exports": "error",
+
+    "security/detect-non-literal-fs-filename": "off",
+    "security/detect-object-injection": "off",
+
+    "@typescript-eslint/no-unsafe-assignment": "error",
+    "@typescript-eslint/no-empty-interface": ["error", { "allowSingleExtends": true }]
   }
 }
