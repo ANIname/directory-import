@@ -1,12 +1,12 @@
+import importModules from './import-modules';
+import preparePrivateOptions from './prepare-private-options';
 import {
   ImportedModules,
   ImportedModulesPublicOptions,
   ImportModulesCallback,
   ImportModulesInputArguments,
   ImportModulesMode,
-} from '../types/index.d';
-import importModules from './import-modules';
-import preparePrivateOptions from './prepare-private-options';
+} from './types.d';
 
 /**
  * Import modules from the current directory synchronously
@@ -83,8 +83,8 @@ function directoryImport(options: ImportedModulesPublicOptions, callback: Import
 /**
  * Import all modules from the specified directory with the given options and call the provided callback for each imported module.
  *
- * @param {...any} arguments_ - The arguments.
- * @returns {ImportedModules} An object containing all imported modules.
+ * @param {ImportModulesInputArguments} arguments_ - The arguments.
+ * @returns {ImportedModules|Promise<ImportedModules>} An object containing all imported modules.
  */
 function directoryImport(...arguments_: ImportModulesInputArguments): ImportedModules | Promise<ImportedModules> {
   const options = preparePrivateOptions(...arguments_);
@@ -92,7 +92,4 @@ function directoryImport(...arguments_: ImportModulesInputArguments): ImportedMo
   return importModules(options);
 }
 
-// eslint-disable-next-line unicorn/prefer-module
-module.exports = directoryImport;
-
-export default directoryImport;
+export { directoryImport };

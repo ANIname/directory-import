@@ -2,12 +2,14 @@
   "name": "directory-import",
   "version": "3.0.0-beta.2",
   "description": "Module will allow you to synchronously or asynchronously import (requires) all modules from the folder you specify",
-  "main": "dist/src/index.js",
-  "types": "dist/types/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
-  "scripts": {},
+  "scripts": {
+    "build": "tsc && cp src/types.d.ts dist/types.d.ts"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ANIname/directory-import.git"

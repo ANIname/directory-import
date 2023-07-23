@@ -1,9 +1,9 @@
 import path from 'node:path';
 
-import { VALID_IMPORT_EXTENSIONS } from '../constants';
-import { ImportedModules, ImportedModulesPrivateOptions } from '../types/index.d';
+import { VALID_IMPORT_EXTENSIONS } from './constants';
 import readDirectoryAsync from './directory-reader-async';
 import readDirectorySync from './directory-reader-sync';
+import { ImportedModules, ImportedModulesPrivateOptions } from './types.d';
 
 const handlers = { async: asyncHandler, sync: syncHandler };
 

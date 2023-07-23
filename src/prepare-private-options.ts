@@ -1,11 +1,7 @@
 import path from 'node:path';
 
-import { DEFAULT_IMPORT_MODULES_PRIVATE_ARGUMENTS } from '../constants';
-import {
-  ImportedModulesPrivateOptions,
-  ImportedModulesPublicOptions,
-  ImportModulesInputArguments,
-} from '../types/index.d';
+import { DEFAULT_IMPORT_MODULES_PRIVATE_ARGUMENTS } from './constants';
+import { ImportedModulesPrivateOptions, ImportedModulesPublicOptions, ImportModulesInputArguments } from './types.d';
 
 /**
  *

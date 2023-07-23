@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-import { ImportedModulesPrivateOptions } from '../types/index.d';
+import { ImportedModulesPrivateOptions } from './types.d';
 
 /**
  * Sync version of the directory reader.

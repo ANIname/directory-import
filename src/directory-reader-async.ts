@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 
-import { ImportedModulesPrivateOptions } from '../types/index.d';
+import { ImportedModulesPrivateOptions } from './types.d';
 
 /**
  * Async version of the directory reader.

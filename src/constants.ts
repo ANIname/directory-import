@@ -1,4 +1,4 @@
-import { ImportedModulesPrivateOptions } from './types/index.d';
+import { ImportedModulesPrivateOptions } from './types.d';
 
 export const VALID_IMPORT_EXTENSIONS = ['.js', '.ts', '.json'];
 
@@ -9,7 +9,7 @@ export const DEFAULT_IMPORT_MODULES_PRIVATE_ARGUMENTS: ImportedModulesPrivateOpt
   limit: Number.POSITIVE_INFINITY,
 
   get callerFilePath() {
-    return (new Error('functional-error').stack as string).split('\n')[5]?.match(/\(([^)]+)\)/)?.[1] as string;
+    return (new Error('functional-error').stack as string).split('\n')[6]?.match(/\(([^)]+)\)/)?.[1] as string;
   },
 
   get callerDirectoryPath() {
