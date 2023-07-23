@@ -80,6 +80,8 @@ function directoryImport(options: ImportedModulesPublicOptions, callback: Import
 function directoryImport(...arguments_: ImportModulesInputArguments): ImportedModules | Promise<ImportedModules> {
   const options = preparePrivateOptions(...arguments_);
 
+  options.callerFilePath = new Error('Expexted error').stack?.split('\n')[2]?.match(/\(([^)]+)\)/)?.[1] as string;
+
   return importModules(options);
 }
 
