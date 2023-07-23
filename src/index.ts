@@ -13,7 +13,7 @@ import preparePrivateOptions from './prepare-private-options';
  *
  * @returns {ImportedModules} An object containing all imported modules.
  */
-export default function directoryImport(): ImportedModules;
+function directoryImport(): ImportedModules;
 
 /**
  * Import modules from the current directory synchronously and call the provided callback for each imported module.
@@ -21,7 +21,7 @@ export default function directoryImport(): ImportedModules;
  * @param {ImportModulesCallback} callback - The callback function to call for each imported module.
  * @returns {ImportedModules} An object containing all imported modules.
  */
-export default function directoryImport(callback: ImportModulesCallback): ImportedModules;
+function directoryImport(callback: ImportModulesCallback): ImportedModules;
 
 /**
  * Import modules from the specified directory synchronously.
@@ -29,7 +29,7 @@ export default function directoryImport(callback: ImportModulesCallback): Import
  * @param {string} targetDirectoryPath - The path to the directory to import modules from.
  * @returns {ImportedModules} An object containing all imported modules.
  */
-export default function directoryImport(targetDirectoryPath: string): ImportedModules;
+function directoryImport(targetDirectoryPath: string): ImportedModules;
 
 /**
  * Import all modules from the specified directory synchronously and call the provided callback for each imported module.
@@ -38,7 +38,7 @@ export default function directoryImport(targetDirectoryPath: string): ImportedMo
  * @param {ImportModulesCallback} callback - The callback function to call for each imported module.
  * @returns {ImportedModules} An object containing all imported modules.
  */
-export default function directoryImport(targetDirectoryPath: string, callback: ImportModulesCallback): ImportedModules;
+function directoryImport(targetDirectoryPath: string, callback: ImportModulesCallback): ImportedModules;
 
 /**
  * Import all modules from the specified directory synchronously or asynchronously.
@@ -47,7 +47,7 @@ export default function directoryImport(targetDirectoryPath: string, callback: I
  * @param {ImportModulesMode} mode - The import mode. Can be 'sync' or 'async'.
  * @returns {ImportedModules} An object containing all imported modules.
  */
-export default function directoryImport(targetDirectoryPath: string, mode: ImportModulesMode): ImportedModules;
+function directoryImport(targetDirectoryPath: string, mode: ImportModulesMode): ImportedModules;
 
 /**
  * Import all modules from the specified directory synchronously or asynchronously and call the provided callback for each imported module.
@@ -57,7 +57,7 @@ export default function directoryImport(targetDirectoryPath: string, mode: Impor
  * @param {ImportModulesCallback} callback - The callback function to call for each imported module.
  * @returns {ImportedModules} An object containing all imported modules.
  */
-export default function directoryImport(
+function directoryImport(
   targetDirectoryPath: string,
   mode: ImportModulesMode,
   callback: ImportModulesCallback,
@@ -69,7 +69,7 @@ export default function directoryImport(
  * @param {ImportedModulesPublicOptions} options - The options object.
  * @returns {ImportedModules} An object containing all imported modules.
  */
-export default function directoryImport(options: ImportedModulesPublicOptions): ImportedModules;
+function directoryImport(options: ImportedModulesPublicOptions): ImportedModules;
 
 /**
  * Import all modules from the specified directory and call the provided callback for each imported module.
@@ -78,10 +78,7 @@ export default function directoryImport(options: ImportedModulesPublicOptions): 
  * @param {ImportModulesCallback} callback - The callback function to call for each imported module.
  * @returns {ImportedModules} An object containing all imported modules.
  */
-export default function directoryImport(
-  options: ImportedModulesPublicOptions,
-  callback: ImportModulesCallback,
-): ImportedModules;
+function directoryImport(options: ImportedModulesPublicOptions, callback: ImportModulesCallback): ImportedModules;
 
 /**
  * Import all modules from the specified directory with the given options and call the provided callback for each imported module.
@@ -89,10 +86,13 @@ export default function directoryImport(
  * @param {...any} arguments_ - The arguments.
  * @returns {ImportedModules} An object containing all imported modules.
  */
-export default function directoryImport(
-  ...arguments_: ImportModulesInputArguments
-): ImportedModules | Promise<ImportedModules> {
+function directoryImport(...arguments_: ImportModulesInputArguments): ImportedModules | Promise<ImportedModules> {
   const options = preparePrivateOptions(...arguments_);
 
   return importModules(options);
 }
+
+// eslint-disable-next-line unicorn/prefer-module
+module.exports = directoryImport;
+
+export default directoryImport;
