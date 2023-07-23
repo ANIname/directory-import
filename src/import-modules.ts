@@ -1,9 +1,10 @@
 import path from 'node:path';
 
-import { VALID_IMPORT_EXTENSIONS } from './constants';
 import readDirectoryAsync from './directory-reader-async';
 import readDirectorySync from './directory-reader-sync';
 import { ImportedModules, ImportedModulesPrivateOptions } from './types.d';
+
+const VALID_IMPORT_EXTENSIONS = new Set(['.js', '.ts', '.json']);
 
 const handlers = { async: asyncHandler, sync: syncHandler };
 
@@ -45,7 +46,7 @@ async function asyncHandler(options: ImportedModulesPrivateOptions): Promise<Imp
  */
 function importModule(filePath: string, options: ImportedModulesPrivateOptions, modules: ImportedModules) {
   const { name: fileName, ext: fileExtension } = path.parse(filePath);
-  const isValidModuleExtension = VALID_IMPORT_EXTENSIONS.includes(fileExtension);
+  const isValidModuleExtension = VALID_IMPORT_EXTENSIONS.has(fileExtension);
 
   if (!isValidModuleExtension) return;
 

@@ -1,7 +1,32 @@
 import path from 'node:path';
 
-import { DEFAULT_IMPORT_MODULES_PRIVATE_ARGUMENTS } from './constants';
-import { ImportedModulesPrivateOptions, ImportedModulesPublicOptions, ImportModulesInputArguments } from './types.d';
+import {
+  ImportedModulesPrivateOptions,
+  ImportedModulesPublicOptions,
+  ImportModulesInputArguments,
+  ImportModulesMode,
+} from './types.d';
+
+const getDefaultOptions = (): ImportedModulesPrivateOptions => {
+  const options = {
+    includeSubdirectories: true,
+    importMode: 'sync' as ImportModulesMode,
+    importPattern: /.*/,
+    limit: Number.POSITIVE_INFINITY,
+    callerFilePath: '/',
+    callerDirectoryPath: '/',
+    targetDirectoryPath: '/',
+  };
+
+  options.callerFilePath = (new Error('functional-error').stack as string)
+    .split('\n')[4]
+    ?.match(/\(([^)]+)\)/)?.[1] as string;
+
+  options.callerDirectoryPath = options.callerFilePath.split('/').slice(0, -1).join('/');
+  options.targetDirectoryPath = options.callerDirectoryPath;
+
+  return options;
+};
 
 /**
  * Prepare the options object from the provided arguments.
@@ -11,7 +36,7 @@ import { ImportedModulesPrivateOptions, ImportedModulesPublicOptions, ImportModu
 export default function preparePrivateOptions(
   ...arguments_: ImportModulesInputArguments
 ): ImportedModulesPrivateOptions {
-  const options = { ...DEFAULT_IMPORT_MODULES_PRIVATE_ARGUMENTS };
+  const options = { ...getDefaultOptions() };
 
   // * Check first argument
 
@@ -27,7 +52,7 @@ export default function preparePrivateOptions(
   // ** use it to oweverwrite the default options
   else if (typeof arguments_[0] === 'object') {
     return {
-      ...DEFAULT_IMPORT_MODULES_PRIVATE_ARGUMENTS,
+      ...getDefaultOptions(),
       ...(arguments_[0] as ImportedModulesPublicOptions),
     };
   }
