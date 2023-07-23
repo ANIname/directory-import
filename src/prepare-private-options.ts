@@ -4,7 +4,7 @@ import { DEFAULT_IMPORT_MODULES_PRIVATE_ARGUMENTS } from './constants';
 import { ImportedModulesPrivateOptions, ImportedModulesPublicOptions, ImportModulesInputArguments } from './types.d';
 
 /**
- *
+ * Prepare the options object from the provided arguments.
  * @param {...any} arguments_ - The arguments.
  * @returns {ImportedModulesPrivateOptions} The options object.
  */
