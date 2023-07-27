@@ -47,13 +47,13 @@ function directoryImport(targetDirectoryPath: string, mode: ImportModulesMode): 
 /**
  * Import all modules from the specified directory synchronously or asynchronously and call the provided callback for each imported module.
  * @param {string} targetDirectoryPath - The path to the directory to import modules from.
- * @param {ImportModulesMode} mode - The import mode. Can be 'sync' or 'async'.
+ * @param {ImportModulesMode} importMode - The import mode. Can be 'sync' or 'async'.
  * @param {ImportModulesCallback} callback - The callback function to call for each imported module.
  * @returns {ImportedModules} An object containing all imported modules.
  */
 function directoryImport(
   targetDirectoryPath: string,
-  mode: ImportModulesMode,
+  importMode: ImportModulesMode,
   callback: ImportModulesCallback,
 ): ImportedModules;
 
