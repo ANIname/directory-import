@@ -1,0 +1,11 @@
+{
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "transform": {
+    ".ts": "ts-jest"
+  },
+  "testMatch": ["**/test/**/*.test.ts"],
+  "transformIgnorePatterns": ["<rootDir>/node_modules/"],
+
+  "verbose": true
+}

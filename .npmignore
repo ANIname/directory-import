@@ -1,23 +1,21 @@
-.editorconfig
-.gitattributes
-.git
+# Source code
+sample-directory/
+media/
+test/
+src/
+*.ts
+*.tsx
+
+# Configuration files
+.eslintrc
+.prettierrc
+.gitignore
+tsconfig.json
+
+# Editor files
+.vscode/
 .idea
 .DS_Store
-.gitignore
-.github
-.eslintrc
-.nyc_output
-coverage/
-tools/
-CODE_OF_CONDUCT.md
-CONTRIBUTING.md
-.dependabot
-.clinic
 
-media
-sample-directory
-test
-
+# Etc
 README.md
-
-package-lock.json
