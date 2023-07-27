@@ -30,7 +30,7 @@ export default async function readDirectoryAsync(
 
         receivedFilesPaths.push(...files);
       } else if (stat.isFile()) {
-        receivedFilesPaths.push(relativeItemPath);
+        receivedFilesPaths.push('/' + relativeItemPath);
       }
 
       return receivedFilesPaths;

@@ -29,7 +29,7 @@ export default function readDirectorySync(
     if (stat.isDirectory() && options.includeSubdirectories) {
       receivedDirectoriesPaths.push(itemPath);
     } else if (stat.isFile()) {
-      receivedFilesPaths.push(itemPath);
+      receivedFilesPaths.push('/' + itemPath);
     }
   }
 
