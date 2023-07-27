@@ -24,6 +24,7 @@ function syncHandler(options: ImportedModulesPrivateOptions): ImportedModules {
     const isModuleImported = importModule(filePath, index, options, modules);
 
     if (isModuleImported) index += 1;
+    if (index === options.limit) break;
   }
 
   return modules;
@@ -45,6 +46,7 @@ async function asyncHandler(options: ImportedModulesPrivateOptions): Promise<Imp
     const isModuleImported = importModule(filePath, index, options, modules);
 
     if (isModuleImported) index += 1;
+    if (index === options.limit) break;
   }
 
   return modules;
@@ -66,8 +68,10 @@ function importModule(
 ) {
   const { name: fileName, ext: fileExtension } = path.parse(filePath);
   const isValidModuleExtension = VALID_IMPORT_EXTENSIONS.has(fileExtension);
+  const isValidFilePath = options.importPattern ? options.importPattern.test(filePath) : true;
 
   if (!isValidModuleExtension) return false;
+  if (!isValidFilePath) return false;
 
   const relativeModulePath = filePath.slice(options.targetDirectoryPath.length + 1);
 
@@ -94,8 +98,6 @@ export default function importModules(
   if (!handlers[options.importMode]) {
     throw new Error(`Expected sync or async import method, but got: ${options.importMode}`);
   }
-
-  console.log('options', options);
 
   return handlers[options.importMode](options);
 }
