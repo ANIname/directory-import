@@ -1,9 +1,10 @@
 export type ModuleName = string;
 export type ModulePath = string;
 export type ModuleData = unknown;
+export type ModuleIndex = number;
 
 export type ImportModulesMode = 'sync' | 'async';
-export type ImportModulesCallback = (name: ModuleName, path: ModulePath, data: ModuleData) => void;
+export type ImportModulesCallback = (name: ModuleName, path: ModulePath, data: ModuleData, index: ModuleIndex) => void;
 
 export type ImportModulesInputArguments = [
   targetDirectoryPathOrOptionsOrCallback?: string | ImportedModulesPublicOptions | ImportModulesCallback,
