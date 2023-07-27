@@ -57,6 +57,7 @@ export default function preparePrivateOptions(
     };
 
     result.targetDirectoryPath = path.resolve(result.callerDirectoryPath, result.targetDirectoryPath);
+    result.callback = typeof arguments_[1] === 'function' ? arguments_[1] : undefined;
 
     return result;
   }
