@@ -51,10 +51,14 @@ export default function preparePrivateOptions(
   // ** it means that he wants to set custom options
   // ** use it to oweverwrite the default options
   else if (typeof arguments_[0] === 'object') {
-    return {
+    const result = {
       ...getDefaultOptions(),
       ...(arguments_[0] as ImportedModulesPublicOptions),
     };
+
+    result.targetDirectoryPath = path.resolve(result.callerDirectoryPath, result.targetDirectoryPath);
+
+    return result;
   }
 
   // ** If user provided a string
