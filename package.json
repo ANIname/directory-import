@@ -8,7 +8,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && cp src/types.d.ts dist/types.d.ts"
+    "build": "rimraf ./dist && tsc",
+    "start": "npm run dist && node dist/index.js",
+    "jest": "npm run build && jest --silent",
+    "jest:watcher": "jest --watchAll"
   },
   "repository": {
     "type": "git",
@@ -57,6 +60,7 @@
     "husky": "^8.0.0",
     "jest": "^29.5.0",
     "prettier": "^3.0.0",
+    "ts-jest": "^29.1.1",
     "typescript": "^5.0.2"
   }
 }
