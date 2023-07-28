@@ -89,9 +89,4 @@ function directoryImport(...arguments_: ImportModulesInputArguments): ImportedMo
   }
 }
 
-// eslint-disable-next-line unicorn/prefer-module
-module.exports = directoryImport;
-
 export { directoryImport };
-
-export default directoryImport;
