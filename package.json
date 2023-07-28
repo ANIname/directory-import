@@ -1,15 +1,16 @@
 {
   "name": "directory-import",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "description": "Module will allow you to synchronously or asynchronously import (requires) all modules from the folder you specify",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "rimraf ./dist && tsc",
     "start": "npm run dist && node dist/index.js",
+    "publish": "npm run build && npm publish",
     "jest": "npm run build && jest --silent",
     "jest:watcher": "jest --watchAll"
   },
