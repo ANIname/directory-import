@@ -2,6 +2,9 @@
 <div align="center">
   <p>
     <img src="https://img.shields.io/node/v/directory-import?logo=nodedotjs&label=Node.JS version" alt="Node version required">
+    <img src="https://img.shields.io/github/package-json/v/KiiDii/directory-import?logo=vitess&logoColor=white&label=Package%20version" alt="Package version">
+    <img src="https://img.shields.io/github/languages/code-size/KiiDii/directory-import?logo=typescript&label=Builded code size" alt="GitHub code size">
+    <img src="https://img.shields.io/github/license/KiiDii/directory-import?logo=mdbook&label=License" alt="License">
     <img src="https://img.shields.io/github/actions/workflow/status/KiiDii/directory-import/test.yml?logo=jest&label=Tests" alt="Github tests">
     <img src="https://img.shields.io/github/issues/KiiDii/directory-import?logo=github&label=Issues">
     <img src="https://img.shields.io/npm/dt/directory-import?logo=npm&label=Downloads" alt="Downloads">
@@ -330,6 +333,30 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 
 ---
 
+## Change Log
+
+### [3.0.0] - 2023-07-29
+
+#### Added
+
+- Added tests to increase code reliability and stability.
+- Implemented function overloads for enhanced flexibility and usage
+- Backward compatibility with older versions has been ensured to ease user migration.
+
+#### Changed
+
+- The entire project code has been rewritten in TypeScript for readabilit, reliability, and ease of maintenance.
+
+#### Fixed
+
+- All known bugs identified in the previous version have been fixed.
+
+#### Removed
+
+- All third-party dependencies have been removed to reduce the package size and increase performance.
+
+---
+
 ## Contribution
 
 Contributions to `directory-import` are always welcome. Here is how you can contribute to the project:
@@ -360,6 +387,7 @@ Thank you for your interest in contributing to the `directory-import`!
 - If you find a bug, or you have any suggestions? please create an issue on [GitHub issues][gitIssues].
 - If you want to help with the development of the project, you can create a pull request on [GitHub pull requests][gitPullRequests].
 - If you like the project, you can put a star on [GitHub][gitProject].
+- For more details, please refer to the [Code of Conduct][CODE_OF_CONDUCT].
 
 [back to top](#top)
 
