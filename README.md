@@ -17,8 +17,8 @@
 
 ## About
 
-Module for automatic import of files from a directory and subdirectories (sync and async).
-You can use imported modules either from the returned object or in the callback function.
+A module for the automatic import of files from a directory and its subdirectories (sync and async).
+The imported modules can be used either from the returned object or in the callback function.
 
 ---
 
@@ -35,7 +35,7 @@ const { directoryImport } = require('directory-import');
 
 const importedModules = directoryImport('./path/to/directory');
 
-// Will output an object with imported modules
+// Outputs an object with imported modules
 // For example: { modulePath1: module1, modulePath2: module2, ... }
 console.log(importedModules);
 ```
@@ -47,7 +47,7 @@ import { directoryImport } from 'directory-import';
 
 const importedModules = directoryImport('./path/to/directory');
 
-// Will output an object with imported modules
+// Outputs an object with imported modules
 // For example: { modulePath1: module1, modulePath2: module2, ... }
 console.log(importedModules);
 ```
@@ -56,7 +56,7 @@ console.log(importedModules);
 
 ## Simple usage
 
-This is one simple example of how to use the library and how it works under the hood:
+Here's a simple example of how to use the library and how it works under the hood:
 
 ```javascript
 const { directoryImport } = require('directory-import');
@@ -67,14 +67,14 @@ console.info(importedModules);
 ```
 
 <a href="https://github.com/KiiDii/directory-import/blob/master/media/directory-import-example.gif">
-  <img src="https://github.com/KiiDii/directory-import/blob/master/media/directory-import-example.gif?raw=true" alt="GIF how it works under the hood">
+  <img src="https://github.com/KiiDii/directory-import/blob/master/media/directory-import-example.gif?raw=true" alt="GIF demonstrating how it works">
 </a>
 
-### [Path to directory from GIF above][pathToDirectoryFromGif]
+### [Path to directory from the GIF above][pathToDirectoryFromGif]
 
-### You can invoke callback on each file
+### Invoking a callback on each file
 
-This can be useful when, for example, you need to do some action depending on the imported file.
+This can be handy when, for instance, you need to perform a specific action based on the imported file.
 
 ```javascript
 const { directoryImport } = require('directory-import');
@@ -85,38 +85,40 @@ directoryImport('./sample-directory', (moduleName, modulePath, moduleData) => {
 ```
 
 <a href="https://github.com/KiiDii/directory-import/blob/master/media/directory-import-example-with-callback.gif">
-  <img src="https://github.com/KiiDii/directory-import/blob/master/media/directory-import-example-with-callback.gif?raw=true" alt="GIF how it works under the hood">
+  <img src="https://github.com/KiiDii/directory-import/blob/master/media/directory-import-example-with-callback.gif?raw=true" alt="GIF demonstrating the callback feature">
 </a>
 
 ### {Function} Callback properties:
 
-| Property | Type   | Description                                                  |
-| -------- | ------ | ------------------------------------------------------------ |
-| name     | String | Module name based on file name                               |
-| path     | String | Relative module path                                         |
-| data     | String | Exported data of the module. (Ex: "module.exports = 'test'") |
-| index    | Number | Imported module index                                        |
+| Property | Type   | Description                                                    |
+| -------- | ------ | -------------------------------------------------------------- |
+| name     | String | Module name based on the filename                              |
+| path     | String | Relative module path                                           |
+| data     | String | Exported data from the module. (Ex: "module.exports = 'test'") |
+| index    | Number | Index of the imported module                                   |
 
 ### {Object} Options properties:
 
-| Property              | Type    | Description                                               |
-| --------------------- | ------- | --------------------------------------------------------- |
-| includeSubdirectories | Boolean | If true, the module will import files from subdirectories |
-| targetDirectoryPath   | String  | The path to the directory to import modules from          |
-| importPattern         | RegExp  | RegExp pattern to filter files                            |
-| importMode            | String  | The import mode. Can be 'sync' or 'async'                 |
-| limit                 | Number  | Limit the number of imported modules                      |
+| Property              | Type    | Description                                                     |
+| --------------------- | ------- | --------------------------------------------------------------- |
+| includeSubdirectories | Boolean | If true, the module will import files from subdirectories       |
+| targetDirectoryPath   | String  | The path to the directory from which modules are to be imported |
+| importPattern         | RegExp  | RegExp pattern to filter files                                  |
+| importMode            | String  | The import mode. Can be 'sync' or 'async'                       |
+| limit                 | Number  | Limit the number of imported modules                            |
+
+[back to top](#top)
 
 ---
 
 ### More examples:
 
-Minimum code to use:
+Minimum code needed for use:
 
 ```js
 const { directoryImport } = require('directory-import');
 
-// Will synchronously import all files in the same directory as the code was called
+// Synchronously imports all modules in the same directory from which the code was called
 directoryImport();
 ```
 
@@ -131,7 +133,7 @@ const result = directoryImport('./path/to/directory', 'async');
 console.log(result);
 ```
 
-Put result in a variable and invoce callback on each file:
+Put the result in a variable and invoke a callback on each file:
 
 ```js
 const { directoryImport } = require('directory-import');
@@ -152,6 +154,8 @@ const importedModules = directoryImport('./path/to/directory', (moduleName, modu
 // }
 console.info(importedModules);
 ```
+
+[back to top](#top)
 
 ---
 
@@ -321,17 +325,46 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 });
 ```
 
+[back to top](#top)
+
+---
+
+## Contribution
+
+Contributions to `directory-import` are always welcome. Here is how you can contribute to the project:
+
+1. **Report issues** - Report about a bug or suggest a new feature [here][gitIssues].
+
+2. **Submit Pull Requests** - If you fixed a bug or developed a new feature, you can submit a PR. Please follow these guidelines while preparing your code:
+
+   - Ensure that your code properly complies with the standard TS conventions.
+   - Make sure to add comments in your code.
+   - Add a description explaining what changes you have made in your PR.
+
+Before making a PR, please make sure your changes are consistent with the project's coding style and all tests are passing.
+
+3. **Improve the Documentation** - You can enhance the README or the wiki page by adding more explanations, fixing typos, adding examples, etc.
+
+Please note that your contributions should follow the guidelines described in the [Code of Conduct][CODE_OF_CONDUCT].
+
+Thank you for your interest in contributing to the `directory-import`!
+
+[back to top](#top)
+
 ---
 
 ### Help
 
-- If you have any questions, you can ask them in the [Discord server][discordServer].
+- If you have any questions or need help, feel free to join our [Discord server][discordServer].
 - If you find a bug, or you have any suggestions? please create an issue on [GitHub issues][gitIssues].
 - If you want to help with the development of the project, you can create a pull request on [GitHub pull requests][gitPullRequests].
 - If you like the project, you can put a star on [GitHub][gitProject].
+
+[back to top](#top)
 
 [pathToDirectoryFromGif]: https://github.com/KiiDii/directory-import/tree/master/sample-directory
 [discordServer]: https://discord.gg/ADFYZtJ
 [gitProject]: https://github.com/ANIname/directory-import
 [gitIssues]: https://github.com/ANIname/directory-import/issues
 [gitPullRequests]: https://github.com/ANIname/directory-import/pulls
+[CODE_OF_CONDUCT]: https://github.com/ANIname/directory-import/blob/master/CODE_OF_CONDUCT.md
