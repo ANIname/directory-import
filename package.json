@@ -19,7 +19,7 @@
     "url": "git+https://github.com/ANIname/directory-import.git"
   },
   "engines": {
-    "node": ">=20.5.0"
+    "node": ">=18.17.0"
   },
   "keywords": [
     "import",
