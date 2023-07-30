@@ -1,11 +1,13 @@
 <!--suppress HtmlDeprecatedAttribute -->
 <div align="center">
   <p>
-    <img src="https://img.shields.io/node/v/directory-import" alt="Node version required">
-    <img src="https://img.shields.io/github/languages/code-size/KiiDii/directory-import" alt="GitHub code size">
-    <img src="https://img.shields.io/npm/dt/directory-import" alt="Downloads">
+    <img src="https://img.shields.io/node/v/directory-import?logo=nodedotjs&label=Node.JS version" alt="Node version required">
+    <img src="https://img.shields.io/github/languages/code-size/KiiDii/directory-import?logo=typescript&label=Builded code size" alt="GitHub code size">
+    <img src="https://img.shields.io/github/actions/workflow/status/KiiDii/directory-import/test.yml?logo=jest&label=Tests" alt="Github tests">
+    <img src="https://img.shields.io/github/issues/KiiDii/directory-import?logo=github&label=Issues">
+    <img src="https://img.shields.io/npm/dt/directory-import?logo=npm&label=Downloads" alt="Downloads">
     <a href="https://discord.gg/ADFYZtJ">
-      <img src="https://img.shields.io/discord/219557939466338304?label=Discord%20chat" alt="Discord server">
+      <img src="https://img.shields.io/discord/219557939466338304?logo=discord&label=Discord%20chat" alt="Discord server">
     </a>
   </p>
   <p>
