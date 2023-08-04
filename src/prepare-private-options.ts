@@ -20,7 +20,7 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
 
   options.callerFilePath = (new Error('functional-error').stack as string)
     .split('\n')[4]
-    ?.match(/\(([^)]+)\)/)?.[1] as string;
+    ?.match(/at file:\/\/(.+):\d+|at .+ \((.+):\d+:\d+\)/)?.slice(1).find(Boolean) as string;
 
   options.callerDirectoryPath = options.callerFilePath.split('/').slice(0, -1).join('/');
   options.targetDirectoryPath = options.callerDirectoryPath;
