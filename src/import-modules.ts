@@ -4,7 +4,7 @@ import readDirectoryAsync from './directory-reader-async';
 import readDirectorySync from './directory-reader-sync';
 import { ImportedModules, ImportedModulesPrivateOptions } from './types.d';
 
-const VALID_IMPORT_EXTENSIONS = new Set(['.js', '.ts', '.json']);
+const VALID_IMPORT_EXTENSIONS = new Set(['.js', '.mjs', '.ts', '.json']);
 
 const handlers = { async: asyncHandler, sync: syncHandler };
 
