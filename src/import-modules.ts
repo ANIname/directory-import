@@ -68,10 +68,12 @@ function importModule(
 ) {
   const { name: fileName, ext: fileExtension } = path.parse(filePath);
   const isValidModuleExtension = VALID_IMPORT_EXTENSIONS.has(fileExtension);
+  const isDeclarationFile = filePath.endsWith('.d.ts');
   const isValidFilePath = options.importPattern ? options.importPattern.test(filePath) : true;
 
   if (!isValidModuleExtension) return false;
   if (!isValidFilePath) return false;
+  if (isDeclarationFile) return false;
 
   const relativeModulePath = filePath.slice(options.targetDirectoryPath.length + 1);
 
