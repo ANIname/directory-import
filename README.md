@@ -335,7 +335,7 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 
 ## Change Log
 
-### [3.1.0] - 2023-11-17
+### [3.1.1] - 2023-11-17
 
 #### Added
 - .mjs files are supported now.
