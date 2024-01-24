@@ -19,8 +19,9 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
   };
 
   options.callerFilePath =
-    (new Error('functional-error').stack as string).split('\n')[4]?.match(/\((.+):\d+:\d+\)/)?.[1] ||
-    options.callerFilePath;
+    (new Error('functional-error').stack as string)
+      .split('\n')[4]
+      ?.match(/at (?:file:\/\/)?(?:Object\.<anonymous>\s\()?([^:]+):\d+:\d+/)?.[1] || options.callerFilePath;
 
   options.callerDirectoryPath = options.callerFilePath.split('/').slice(0, -1).join('/');
   options.targetDirectoryPath = options.callerDirectoryPath;
