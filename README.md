@@ -335,6 +335,11 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 
 ## Change Log
 
+### [3.2.1] - 2024-01-25
+
+#### Fixed
+- Fixed a problem where the callerFilePath option was not working as expected for node.js versions greater than 20.
+
 ### [3.1.1] - 2023-11-17
 
 #### Added
