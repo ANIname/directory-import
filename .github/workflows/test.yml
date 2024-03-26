@@ -8,11 +8,12 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
+    name: Run jest tests on ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [18.x, 21.x]
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v2
