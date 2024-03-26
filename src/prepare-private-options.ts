@@ -13,17 +13,18 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: '/',
-    callerDirectoryPath: '/',
-    targetDirectoryPath: '/',
+    callerFilePath: path.resolve('/'),
+    callerDirectoryPath: path.resolve('/'),
+    targetDirectoryPath: path.resolve('/'),
   };
 
   options.callerFilePath =
     (new Error('functional-error').stack as string)
       .split('\n')[4]
-      ?.match(/at (?:file:\/\/)?(?:Object\.<anonymous>\s\()?([^:]+):\d+:\d+/)?.[1] || options.callerFilePath;
+      // eslint-disable-next-line security/detect-unsafe-regex
+      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[1] || options.callerFilePath;
 
-  options.callerDirectoryPath = options.callerFilePath.split('/').slice(0, -1).join('/');
+  options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
 
   return options;
