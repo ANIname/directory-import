@@ -22,7 +22,7 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
     (new Error('functional-error').stack as string)
       .split('\n')[4]
       // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[1] || options.callerFilePath;
+      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;

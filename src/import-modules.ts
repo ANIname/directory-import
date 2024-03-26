@@ -75,7 +75,7 @@ function importModule(
   if (!isValidFilePath) return false;
   if (isDeclarationFile) return false;
 
-  const relativeModulePath = filePath.slice(options.targetDirectoryPath.length + 1);
+  const relativeModulePath = filePath.slice(options.targetDirectoryPath.length);
 
   // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
   const importedModule = require(filePath) as unknown;
