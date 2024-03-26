@@ -25,5 +25,9 @@ jobs:
         run: npm install
       - name: Build
         run: npm run build
-      - name: Test
-        run: npx jest
+      - name: Run Test on Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: npm run jest
+      - name: Run Test on Windows
+        if: matrix.os == 'windows-latest'
+        run: npm run jest:windows
