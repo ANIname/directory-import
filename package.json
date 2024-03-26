@@ -13,7 +13,7 @@
     "publish": "npm run build && npm publish",
     "jest": "jest --silent test/index.test.ts",
     "jest:watcher": "jest --watchAll",
-    "jest:windows": "jest --silent"
+    "jest:windows": "jest --silent test-windows/index.test.ts"
   },
   "repository": {
     "type": "git",

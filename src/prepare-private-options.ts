@@ -26,7 +26,6 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
-
   return options;
 };
 
