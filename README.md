@@ -335,7 +335,7 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 
 ## Change Log
 
-### [3.3.0] - 2024-03-27
+### [3.3.1] - 2024-03-27
 
 #### Fixed
 - Now module can work with windows operating system!
