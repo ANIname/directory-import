@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 
 import { ImportedModulesPrivateOptions } from './types.d';
 
@@ -23,13 +24,13 @@ export default function readDirectorySync(
   // Get the files and directories paths from the target directory.
   let itemsCounter = 0;
   for (itemsCounter; itemsCounter < receivedItemsPaths.length; itemsCounter += 1) {
-    const itemPath = `${targetDirectoryPath}/${receivedItemsPaths[itemsCounter]}`;
+    const itemPath = path.join(`${targetDirectoryPath}`, `${receivedItemsPaths[itemsCounter]}`);
     const stat = fs.statSync(itemPath);
 
     if (stat.isDirectory() && options.includeSubdirectories) {
       receivedDirectoriesPaths.push(itemPath);
     } else if (stat.isFile()) {
-      receivedFilesPaths.push('/' + itemPath);
+      receivedFilesPaths.push(itemPath);
     }
   }
 

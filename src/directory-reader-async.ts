@@ -1,4 +1,5 @@
 import { promises as fs } from 'node:fs';
+import path from 'node:path';
 
 import { ImportedModulesPrivateOptions } from './types.d';
 
@@ -21,7 +22,7 @@ export default async function readDirectoryAsync(
     receivedItemsPaths.map(async (itemPath) => {
       const receivedFilesPaths = [];
 
-      const relativeItemPath = `${targetDirectoryPath}/${itemPath}`;
+      const relativeItemPath = path.join(`${targetDirectoryPath}`, `${itemPath}`);
 
       const stat = await fs.stat(relativeItemPath);
 
@@ -30,7 +31,7 @@ export default async function readDirectoryAsync(
 
         receivedFilesPaths.push(...files);
       } else if (stat.isFile()) {
-        receivedFilesPaths.push('/' + relativeItemPath);
+        receivedFilesPaths.push(relativeItemPath);
       }
 
       return receivedFilesPaths;

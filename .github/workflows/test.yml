@@ -8,11 +8,12 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
+    name: Run jest tests on ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [18.x, 21.x]
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v2
@@ -24,5 +25,9 @@ jobs:
         run: npm install
       - name: Build
         run: npm run build
-      - name: Test
-        run: npx jest
+      - name: Run Test on Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: npm run jest
+      - name: Run Test on Windows
+        if: matrix.os == 'windows-latest'
+        run: npm run jest:windows
