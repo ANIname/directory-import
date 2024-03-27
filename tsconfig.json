@@ -18,19 +18,24 @@
     "noUnusedParameters": true,
     "noImplicitThis": true,
     "noImplicitAny": true,
+
     /* Modules */
     "module": "commonjs",
     "resolveJsonModule": true,
     "baseUrl": "./src",
     "outDir": "./dist",
+
     /* Emit */
     "declaration": true,
+
     /* Language and Environment */
     "target": "ES2022",
+
     /* Interop Constraints */
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true
   },
+
   "include": [
     "./src"
   ]

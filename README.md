@@ -335,6 +335,12 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 
 ## Change Log
 
+### [3.3.0] - 2024-03-27
+
+#### Fixed
+- Now module can work with windows operating system!
+- Enhance path handling and regular expressions for robustness
+
 ### [3.2.1] - 2024-01-25
 
 #### Fixed
