@@ -22,6 +22,7 @@ export interface ImportedModulesPublicOptions {
   importPattern?: RegExp;
   importMode?: ImportModulesMode;
   limit?: number;
+  forceReload?: boolean;
 }
 
 export interface ImportedModulesPrivateOptions extends Required<ImportedModulesPublicOptions> {
