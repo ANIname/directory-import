@@ -10,7 +10,8 @@
   "scripts": {
     "build": "rimraf ./dist && tsup",
     "start": "node dist/index.js",
-    "publish": "npm run build && npm publish",
+    "prepare": "npm run build",
+    "publish": "npm run prepare && npm publish",
     "jest": "jest --silent test/index.test.ts",
     "jest:watcher": "jest --watchAll",
     "jest:windows": "jest --silent test-windows/index.test.ts"
