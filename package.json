@@ -1,6 +1,6 @@
 {
   "name": "directory-import",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "Module will allow you to synchronously or asynchronously import (requires) all modules from the folder you specify",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
