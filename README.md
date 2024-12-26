@@ -110,6 +110,7 @@ directoryImport('./sample-directory', (moduleName, modulePath, moduleData) => {
 | importPattern         | RegExp  | RegExp pattern to filter files                                  |
 | importMode            | String  | The import mode. Can be 'sync' or 'async'                       |
 | limit                 | Number  | Limit the number of imported modules                            |
+| forceReload           | Boolean | If true, reload modules disabling require cache                 |
 
 [back to top](#top)
 
@@ -334,6 +335,11 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 ---
 
 ## Change Log
+
+### [3.3.2] - 2024-12-25
+
+#### Added
+- Add forceReload option.
 
 ### [3.3.1] - 2024-03-27
 

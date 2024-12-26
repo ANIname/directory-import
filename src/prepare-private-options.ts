@@ -16,6 +16,7 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
     callerFilePath: path.resolve('/'),
     callerDirectoryPath: path.resolve('/'),
     targetDirectoryPath: path.resolve('/'),
+    forceReload: false,
   };
 
   options.callerFilePath =
