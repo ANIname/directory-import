@@ -7,6 +7,35 @@ import {
   ImportModulesMode,
 } from './types.d';
 
+/**
+ * Validates a path to prevent dangerous directory traversal attacks
+ * @param {string} inputPath - The path to validate
+ * @param {string} basePath - The base path for resolution
+ * @returns {string} The validated resolved path
+ * @throws {Error} If dangerous path traversal is detected
+ */
+function validatePath(inputPath: string, basePath: string): string {
+  // Check for dangerous patterns that could access sensitive system files
+  const dangerousPatterns = [
+    /\.\.[\/\\]\.\.[\/\\]\.\.[\/\\]/, // Three or more levels up
+    /[\/\\]etc[\/\\]/, // Unix system config directory
+    /[\/\\]proc[\/\\]/, // Unix process directory  
+    /[\/\\]sys[\/\\]/, // Unix system directory
+    /[\/\\]root[\/\\]/, // Unix root directory
+    /[\/\\]boot[\/\\]/, // Unix boot directory
+    /C:[\/\\]Windows[\/\\]/i, // Windows system directory
+    /C:[\/\\]Users[\/\\][^\/\\]+[\/\\]AppData[\/\\]/i, // Windows user data
+  ];
+  
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(inputPath)) {
+      throw new Error(`Dangerous path pattern detected: "${inputPath}"`);
+    }
+  }
+  
+  return path.resolve(basePath, inputPath);
+}
+
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
   const options = {
     includeSubdirectories: true,
@@ -22,8 +51,8 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
   options.callerFilePath =
     (new Error('functional-error').stack as string)
       .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
+      // Safe regex pattern to avoid ReDoS attacks
+      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?[^:]+/)?.[0] || options.callerFilePath;
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
@@ -58,7 +87,7 @@ export default function preparePrivateOptions(
       ...(arguments_[0] as ImportedModulesPublicOptions),
     };
 
-    result.targetDirectoryPath = path.resolve(result.callerDirectoryPath, result.targetDirectoryPath);
+    result.targetDirectoryPath = validatePath(result.targetDirectoryPath, result.callerDirectoryPath);
     result.callback = typeof arguments_[1] === 'function' ? arguments_[1] : undefined;
 
     return result;
@@ -68,7 +97,7 @@ export default function preparePrivateOptions(
   // ** it means that he wants to set the target directory path as first argument
   // ** use it to oweverwrite the default options
   else if (typeof arguments_[0] === 'string') {
-    options.targetDirectoryPath = path.resolve(options.callerDirectoryPath, arguments_[0]);
+    options.targetDirectoryPath = validatePath(arguments_[0], options.callerDirectoryPath);
   }
 
   // ** If user provided a function
