@@ -7,23 +7,58 @@ import {
   ImportModulesMode,
 } from './types.d';
 
+const CALLER_FILE_PATH_PATTERN = /(?:\/|[A-Za-z]:\\)[/\\]?[^:\n)]+/;
+
+/**
+ * Resolve fallback caller file path.
+ * @param {string} fallbackCallerDirectoryPath - The directory path used as fallback.
+ * @returns {string} A synthetic caller file path within the fallback directory.
+ */
+function getFallbackCallerFilePath(fallbackCallerDirectoryPath: string): string {
+  return path.join(fallbackCallerDirectoryPath, 'directory-import-fallback.js');
+}
+
+/**
+ * Extract caller file path from an error stack trace.
+ * @param {string | undefined} stackTrace - The raw stack trace string.
+ * @returns {string | undefined} The detected caller file path or undefined when not found.
+ */
+function extractCallerFilePathFromStackTrace(stackTrace: string | undefined): string | undefined {
+  if (!stackTrace) {
+    return undefined;
+  }
+
+  const stackTraceLines = stackTrace.split('\n');
+
+  for (const stackTraceLine of stackTraceLines) {
+    const matchedCallerFilePath = stackTraceLine.match(CALLER_FILE_PATH_PATTERN)?.[0];
+
+    if (matchedCallerFilePath) {
+      return matchedCallerFilePath;
+    }
+  }
+
+  return undefined;
+}
+
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
+  const fallbackCallerDirectoryPath = process.cwd();
+
   const options = {
     includeSubdirectories: true,
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: path.resolve('/'),
-    callerDirectoryPath: path.resolve('/'),
-    targetDirectoryPath: path.resolve('/'),
+    callerFilePath: getFallbackCallerFilePath(fallbackCallerDirectoryPath),
+    callerDirectoryPath: fallbackCallerDirectoryPath,
+    targetDirectoryPath: fallbackCallerDirectoryPath,
     forceReload: false,
   };
 
-  options.callerFilePath =
-    (new Error('functional-error').stack as string)
-      .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
+  const extractedCallerFilePath = extractCallerFilePathFromStackTrace(new Error('functional-error').stack);
+  if (extractedCallerFilePath) {
+    options.callerFilePath = extractedCallerFilePath;
+  }
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
