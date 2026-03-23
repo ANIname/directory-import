@@ -28,7 +28,7 @@ function extractCallerFilePathFromStackTrace(stackTrace: string | undefined): st
     return undefined;
   }
 
-  const stackTraceLines = stackTrace.split('\n');
+  const stackTraceLines = stackTrace.split('\n').slice(4);
 
   for (const stackTraceLine of stackTraceLines) {
     const matchedCallerFilePath = stackTraceLine.match(CALLER_FILE_PATH_PATTERN)?.[0];

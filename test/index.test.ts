@@ -14,7 +14,7 @@ test('Import modules from relative directory when stack trace has no file path',
   Error.prepareStackTrace = () => 'stack trace without file path';
 
   try {
-    const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY);
+    const result = directoryImport('./sample-directory');
 
     expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
   } finally {
