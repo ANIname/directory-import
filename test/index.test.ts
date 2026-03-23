@@ -8,6 +8,34 @@ import {
 } from './constants';
 import fs from 'fs';
 
+test('Import modules from relative directory when stack trace has no file path', () => {
+  const originalPrepareStackTrace = Error.prepareStackTrace;
+
+  Error.prepareStackTrace = () => 'stack trace without file path';
+
+  try {
+    const result = directoryImport('./sample-directory');
+
+    expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
+  } finally {
+    Error.prepareStackTrace = originalPrepareStackTrace;
+  }
+});
+
+test('Import modules from relative directory when stack trace contains non-existent pseudo path', () => {
+  const originalPrepareStackTrace = Error.prepareStackTrace;
+
+  Error.prepareStackTrace = () => 'Error: simulated\n    at [eval] (/vm:1:1)';
+
+  try {
+    const result = directoryImport('./sample-directory');
+
+    expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
+  } finally {
+    Error.prepareStackTrace = originalPrepareStackTrace;
+  }
+});
+
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
 
