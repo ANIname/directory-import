@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 import {
@@ -33,7 +34,7 @@ function extractCallerFilePathFromStackTrace(stackTrace: string | undefined): st
   for (const stackTraceLine of stackTraceLines) {
     const matchedCallerFilePath = stackTraceLine.match(CALLER_FILE_PATH_PATTERN)?.[0];
 
-    if (matchedCallerFilePath) {
+    if (matchedCallerFilePath && fs.existsSync(matchedCallerFilePath)) {
       return matchedCallerFilePath;
     }
   }
