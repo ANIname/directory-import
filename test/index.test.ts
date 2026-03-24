@@ -263,3 +263,18 @@ test('Import modules without cache', () => {
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
 });
+
+test('Skip .mjs modules to avoid CommonJS require crashes', () => {
+  const temporaryEsmModulePath = `${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/temporary-esm-module.mjs`;
+
+  fs.writeFileSync(temporaryEsmModulePath, "export default 'temporary-esm-module';\n");
+
+  try {
+    const importedModules = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY);
+    expect(importedModules['/temporary-esm-module.mjs']).toBeUndefined();
+  } finally {
+    if (fs.existsSync(temporaryEsmModulePath)) {
+      fs.unlinkSync(temporaryEsmModulePath);
+    }
+  }
+});
