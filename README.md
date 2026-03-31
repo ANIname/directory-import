@@ -23,6 +23,7 @@
 
 A module for the automatic import of files from a directory and its subdirectories (sync and async).
 The imported modules can be used either from the returned object or in the callback function.
+The importer uses `require`, so supported file extensions are `.js`, `.ts`, and `.json`.
 
 ---
 
@@ -340,6 +341,11 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 
 #### Added
 - Add forceReload option.
+
+### [Unreleased]
+
+#### Fixed
+- Skip `.mjs` files in CJS mode to avoid `ERR_REQUIRE_ESM` runtime crashes.
 
 ### [3.3.1] - 2024-03-27
 
