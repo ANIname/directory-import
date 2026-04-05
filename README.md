@@ -110,7 +110,7 @@ directoryImport('./sample-directory', (moduleName, modulePath, moduleData) => {
 | importPattern         | RegExp  | RegExp pattern to filter files                                  |
 | importMode            | String  | The import mode. Can be 'sync' or 'async'                       |
 | limit                 | Number  | Limit the number of imported modules                            |
-| forceReload           | Boolean | If true, reload modules disabling require cache                 |
+| forceReload           | Boolean | If true, reload modules by clearing require cache (including dependencies) |
 
 [back to top](#top)
 

@@ -7,6 +7,8 @@ import {
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
 import fs from 'fs';
+import os from 'node:os';
+import path from 'node:path';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -262,4 +264,37 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('Import modules without cache and refresh transitive dependencies', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-force-reload-'));
+  const dependencyFilePath = path.join(temporaryDirectoryPath, 'dependency.js');
+  const parentFilePath = path.join(temporaryDirectoryPath, 'parent.js');
+
+  try {
+    fs.writeFileSync(dependencyFilePath, "module.exports = { value: 'v1' };\n");
+    fs.writeFileSync(parentFilePath, "module.exports = require('./dependency.js');\n");
+
+    const firstImportResult = directoryImport({
+      targetDirectoryPath: temporaryDirectoryPath,
+      includeSubdirectories: false,
+      importPattern: /parent\.js$/,
+      forceReload: true,
+    });
+
+    expect(firstImportResult['/parent.js']).toEqual({ value: 'v1' });
+
+    fs.writeFileSync(dependencyFilePath, "module.exports = { value: 'v2' };\n");
+
+    const secondImportResult = directoryImport({
+      targetDirectoryPath: temporaryDirectoryPath,
+      includeSubdirectories: false,
+      importPattern: /parent\.js$/,
+      forceReload: true,
+    });
+
+    expect(secondImportResult['/parent.js']).toEqual({ value: 'v2' });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
 });
