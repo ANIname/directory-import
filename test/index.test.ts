@@ -301,7 +301,7 @@ try {
   const firstImportResult = directoryImport({
     targetDirectoryPath: temporaryDirectoryPath,
     includeSubdirectories: false,
-    importPattern: /parent\\\\.js$/,
+    importPattern: /parent\\.js$/,
     forceReload: true,
   });
 
@@ -310,7 +310,7 @@ try {
   const secondImportResult = directoryImport({
     targetDirectoryPath: temporaryDirectoryPath,
     includeSubdirectories: false,
-    importPattern: /parent\\\\.js$/,
+    importPattern: /parent\\.js$/,
     forceReload: true,
   });
 
