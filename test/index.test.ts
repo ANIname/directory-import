@@ -7,6 +7,8 @@ import {
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
 import fs from 'fs';
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -262,4 +264,71 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('Import modules without cache and refresh transitive dependencies', () => {
+  const projectRootPath = path.resolve(__dirname, '..');
+  const sourceEntryPointPath = path.resolve(projectRootPath, 'src', 'index.ts');
+  const evaluationScript = `
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const ts = require('typescript');
+
+require.extensions['.ts'] = function compileTypeScript(module, filename) {
+  const sourceCode = fs.readFileSync(filename, 'utf8');
+  const transpileOutput = ts.transpileModule(sourceCode, {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2022,
+      esModuleInterop: true,
+    },
+    fileName: filename,
+  });
+
+  module._compile(transpileOutput.outputText, filename);
+};
+
+const { directoryImport } = require(${JSON.stringify(sourceEntryPointPath)});
+const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-force-reload-'));
+const dependencyFilePath = path.join(temporaryDirectoryPath, 'dependency.js');
+const parentFilePath = path.join(temporaryDirectoryPath, 'parent.js');
+
+try {
+  fs.writeFileSync(dependencyFilePath, "module.exports = { value: 'v1' };\\n");
+  fs.writeFileSync(parentFilePath, "module.exports = require('./dependency.js');\\n");
+
+  const firstImportResult = directoryImport({
+    targetDirectoryPath: temporaryDirectoryPath,
+    includeSubdirectories: false,
+    importPattern: /parent\\.js$/,
+    forceReload: true,
+  });
+
+  fs.writeFileSync(dependencyFilePath, "module.exports = { value: 'v2' };\\n");
+
+  const secondImportResult = directoryImport({
+    targetDirectoryPath: temporaryDirectoryPath,
+    includeSubdirectories: false,
+    importPattern: /parent\\.js$/,
+    forceReload: true,
+  });
+
+  if (firstImportResult['/parent.js']?.value !== 'v1') process.exit(11);
+  if (secondImportResult['/parent.js']?.value !== 'v2') process.exit(12);
+} finally {
+  fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+}
+`;
+
+  const evaluationResult = spawnSync(process.execPath, ['-e', evaluationScript], {
+    cwd: projectRootPath,
+    encoding: 'utf8',
+  });
+
+  if (evaluationResult.status !== 0) {
+    throw new Error(
+      `Force reload runtime verification failed with code ${evaluationResult.status}\nstdout:\n${evaluationResult.stdout}\nstderr:\n${evaluationResult.stderr}`,
+    );
+  }
 });
