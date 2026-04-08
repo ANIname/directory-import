@@ -7,6 +7,8 @@ import {
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
 import fs from 'fs';
+import os from 'node:os';
+import path from 'node:path';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -221,6 +223,53 @@ test('Import modules with specified options and call the provided callback for e
 
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
   expect(callbackResults).toEqual(DEFAULT_EXPECTED_CALLBACK_RESULTS_FROM_SAMPLE_DIRECTORY);
+});
+
+test('Import modules from a directory with recursive symbolic links synchronously without crashing', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-loop-sync-'));
+  const nestedDirectoryPath = path.join(temporaryDirectoryPath, 'nested');
+  const moduleFilePath = path.join(nestedDirectoryPath, 'sample.js');
+  const symbolicLinkPath = path.join(nestedDirectoryPath, 'loop');
+
+  fs.mkdirSync(nestedDirectoryPath);
+  fs.writeFileSync(
+    moduleFilePath,
+    "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { stable: true };\n",
+  );
+  fs.symlinkSync(temporaryDirectoryPath, symbolicLinkPath, 'dir');
+
+  try {
+    const importedModules = directoryImport(temporaryDirectoryPath);
+
+    expect(importedModules['/nested/sample.js']).toEqual({ stable: true });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
+});
+
+test('Import modules from a directory with recursive symbolic links asynchronously without crashing', async () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-loop-async-'));
+  const nestedDirectoryPath = path.join(temporaryDirectoryPath, 'nested');
+  const moduleFilePath = path.join(nestedDirectoryPath, 'sample.js');
+  const symbolicLinkPath = path.join(nestedDirectoryPath, 'loop');
+
+  fs.mkdirSync(nestedDirectoryPath);
+  fs.writeFileSync(
+    moduleFilePath,
+    "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { stable: true };\n",
+  );
+  fs.symlinkSync(temporaryDirectoryPath, symbolicLinkPath, 'dir');
+
+  try {
+    const importedModules = await directoryImport({
+      targetDirectoryPath: temporaryDirectoryPath,
+      importMode: 'async',
+    });
+
+    expect(importedModules['/nested/sample.js']).toEqual({ stable: true });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
 });
 
 test('Import modules with cache', () => {
