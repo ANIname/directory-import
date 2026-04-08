@@ -23,6 +23,7 @@
 
 A module for the automatic import of files from a directory and its subdirectories (sync and async).
 The imported modules can be used either from the returned object or in the callback function.
+Recursive symbolic-link loops are ignored to prevent filesystem traversal crashes.
 
 ---
 
