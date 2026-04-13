@@ -7,8 +7,8 @@ import {
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
+import { execFileSync } from 'node:child_process';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -267,35 +267,40 @@ test('Import modules without cache', () => {
 });
 
 test('Import modules without cache from a symlinked directory', () => {
-  const temporaryDirectoryPath = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'directory-import-force-reload-symlink-'),
-  );
-  const realDirectoryPath = path.join(temporaryDirectoryPath, 'real-directory');
-  const symlinkedDirectoryPath = path.join(temporaryDirectoryPath, 'symlinked-directory');
-  const moduleFilePath = path.join(realDirectoryPath, 'cache-test.js');
-  const symlinkType = process.platform === 'win32' ? 'junction' : 'dir';
+  const packageEntryPath = path.resolve(__dirname, '../dist/index.js');
+  const reproductionScript = `
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { directoryImport } = require(${JSON.stringify(packageEntryPath)});
 
-  try {
-    fs.mkdirSync(realDirectoryPath);
-    fs.writeFileSync(
-      moduleFilePath,
-      "module.exports = { testData: 'Hello from real directory' };\n",
-    );
-    fs.symlinkSync(realDirectoryPath, symlinkedDirectoryPath, symlinkType);
+const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-force-reload-symlink-'));
+const realDirectoryPath = path.join(temporaryDirectoryPath, 'real-directory');
+const symlinkedDirectoryPath = path.join(temporaryDirectoryPath, 'symlinked-directory');
+const moduleFilePath = path.join(realDirectoryPath, 'cache-test.js');
+const symlinkType = process.platform === 'win32' ? 'junction' : 'dir';
 
-    const firstImportResult = directoryImport(symlinkedDirectoryPath);
+try {
+  fs.mkdirSync(realDirectoryPath);
+  fs.writeFileSync(moduleFilePath, "module.exports = { testData: 'Hello from real directory' };\\n");
+  fs.symlinkSync(realDirectoryPath, symlinkedDirectoryPath, symlinkType);
 
-    expect(firstImportResult['/cache-test.js']).toEqual({ testData: 'Hello from real directory' });
+  directoryImport(symlinkedDirectoryPath);
+  fs.writeFileSync(moduleFilePath, "module.exports = { testData: 'Hello after update' };\\n");
 
-    fs.writeFileSync(moduleFilePath, "module.exports = { testData: 'Hello after update' };\n");
+  const secondImportResult = directoryImport({
+    targetDirectoryPath: symlinkedDirectoryPath,
+    forceReload: true,
+  });
 
-    const secondImportResult = directoryImport({
-      targetDirectoryPath: symlinkedDirectoryPath,
-      forceReload: true,
-    });
+  process.stdout.write(JSON.stringify(secondImportResult['/cache-test.js']));
+} finally {
+  fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+}
+`;
+  const commandOutput = execFileSync(process.execPath, ['-e', reproductionScript], {
+    encoding: 'utf8',
+  }).trim();
 
-    expect(secondImportResult['/cache-test.js']).toEqual({ testData: 'Hello after update' });
-  } finally {
-    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
-  }
+  expect(JSON.parse(commandOutput)).toEqual({ testData: 'Hello after update' });
 });
