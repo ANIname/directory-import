@@ -7,6 +7,8 @@ import {
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
 import fs from 'fs';
+import os from 'os';
+import path from 'path';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -262,4 +264,38 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('Import modules without cache from a symlinked directory', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'directory-import-force-reload-symlink-'),
+  );
+  const realDirectoryPath = path.join(temporaryDirectoryPath, 'real-directory');
+  const symlinkedDirectoryPath = path.join(temporaryDirectoryPath, 'symlinked-directory');
+  const moduleFilePath = path.join(realDirectoryPath, 'cache-test.js');
+  const symlinkType = process.platform === 'win32' ? 'junction' : 'dir';
+
+  try {
+    fs.mkdirSync(realDirectoryPath);
+    fs.writeFileSync(
+      moduleFilePath,
+      "module.exports = { testData: 'Hello from real directory' };\n",
+    );
+    fs.symlinkSync(realDirectoryPath, symlinkedDirectoryPath, symlinkType);
+
+    const firstImportResult = directoryImport(symlinkedDirectoryPath);
+
+    expect(firstImportResult['/cache-test.js']).toEqual({ testData: 'Hello from real directory' });
+
+    fs.writeFileSync(moduleFilePath, "module.exports = { testData: 'Hello after update' };\n");
+
+    const secondImportResult = directoryImport({
+      targetDirectoryPath: symlinkedDirectoryPath,
+      forceReload: true,
+    });
+
+    expect(secondImportResult['/cache-test.js']).toEqual({ testData: 'Hello after update' });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
 });
