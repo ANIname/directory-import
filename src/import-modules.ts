@@ -76,14 +76,16 @@ function importModule(
   if (isDeclarationFile) return false;
 
   const relativeModulePath = filePath.slice(options.targetDirectoryPath.length);
+  // Resolve to the canonical cache key used by Node's module loader.
+  const resolvedModulePath = require.resolve(filePath);
 
   if (options.forceReload) {
     // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
-    delete require.cache[filePath];
+    delete require.cache[resolvedModulePath];
   }
 
   // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
-  const importedModule = require(filePath) as unknown;
+  const importedModule = require(resolvedModulePath) as unknown;
 
   modules[relativeModulePath] = importedModule;
 

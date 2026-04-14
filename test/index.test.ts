@@ -6,7 +6,9 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -262,4 +264,40 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+(process.platform === 'win32' ? test.skip : test)('Import modules without cache from a symlinked directory', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-force-reload-'));
+  const actualDirectoryPath = path.join(temporaryDirectoryPath, 'actual');
+  const symlinkDirectoryPath = path.join(temporaryDirectoryPath, 'symlink');
+
+  try {
+    fs.mkdirSync(actualDirectoryPath);
+    fs.writeFileSync(
+      path.join(actualDirectoryPath, 'sample-file.js'),
+      "module.exports = { testData: 'Initial value' };\n",
+    );
+    fs.symlinkSync(actualDirectoryPath, symlinkDirectoryPath, 'dir');
+
+    const initialResult = directoryImport({
+      targetDirectoryPath: symlinkDirectoryPath,
+      forceReload: true,
+    });
+
+    expect(initialResult['/sample-file.js']).toEqual({ testData: 'Initial value' });
+
+    fs.writeFileSync(
+      path.join(actualDirectoryPath, 'sample-file.js'),
+      "module.exports = { testData: 'Updated value' };\n",
+    );
+
+    const updatedResult = directoryImport({
+      targetDirectoryPath: symlinkDirectoryPath,
+      forceReload: true,
+    });
+
+    expect(updatedResult['/sample-file.js']).toEqual({ testData: 'Updated value' });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
 });
