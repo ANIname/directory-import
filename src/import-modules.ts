@@ -1,4 +1,5 @@
 import path from 'node:path';
+import fs from 'node:fs';
 
 import readDirectoryAsync from './directory-reader-async';
 import readDirectorySync from './directory-reader-sync';
@@ -76,12 +77,17 @@ function importModule(
   if (isDeclarationFile) return false;
 
   const relativeModulePath = filePath.slice(options.targetDirectoryPath.length);
-  // Resolve to the canonical cache key used by Node's module loader.
+  const canonicalModulePath = fs.realpathSync.native(filePath);
   const resolvedModulePath = require.resolve(filePath);
 
   if (options.forceReload) {
+    // Invalidate all known cache key variants (raw path, resolve result, real path).
+    // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
+    delete require.cache[filePath];
     // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
     delete require.cache[resolvedModulePath];
+    // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
+    delete require.cache[canonicalModulePath];
   }
 
   // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
