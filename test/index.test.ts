@@ -6,7 +6,10 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -262,4 +265,77 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+(process.platform === 'win32' ? test.skip : test)('Import modules without cache from a symlinked directory', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-force-reload-'));
+  const actualDirectoryPath = path.join(temporaryDirectoryPath, 'actual');
+  const symlinkDirectoryPath = path.join(temporaryDirectoryPath, 'symlink');
+
+  try {
+    fs.mkdirSync(actualDirectoryPath);
+    fs.writeFileSync(
+      path.join(actualDirectoryPath, 'sample-file.js'),
+      "module.exports = { testData: 'Initial value' };\n",
+    );
+    fs.symlinkSync(actualDirectoryPath, symlinkDirectoryPath, 'dir');
+
+    execFileSync('npm', ['run', 'build'], {
+      cwd: path.resolve(__dirname, '..'),
+      stdio: 'ignore',
+    });
+
+    const serializedResults = execFileSync(
+      process.execPath,
+      [
+        '-e',
+        `
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const { directoryImport } = require('./dist');
+
+          const actualDirectoryPath = process.env.ACTUAL_DIRECTORY_PATH;
+          const symlinkDirectoryPath = process.env.SYMLINK_DIRECTORY_PATH;
+
+          const initialResult = directoryImport({
+            targetDirectoryPath: symlinkDirectoryPath,
+            forceReload: true,
+          });
+
+          fs.writeFileSync(
+            path.join(actualDirectoryPath, 'sample-file.js'),
+            "module.exports = { testData: 'Updated value' };\\n",
+          );
+
+          const updatedResult = directoryImport({
+            targetDirectoryPath: symlinkDirectoryPath,
+            forceReload: true,
+          });
+
+          process.stdout.write(JSON.stringify({
+            initial: initialResult['/sample-file.js'],
+            updated: updatedResult['/sample-file.js'],
+          }));
+        `,
+      ],
+      {
+        cwd: path.resolve(__dirname, '..'),
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          ACTUAL_DIRECTORY_PATH: actualDirectoryPath,
+          SYMLINK_DIRECTORY_PATH: symlinkDirectoryPath,
+        },
+      },
+    );
+    const result = JSON.parse(serializedResults) as {
+      initial: { testData: string };
+      updated: { testData: string };
+    };
+
+    expect(result.initial).toEqual({ testData: 'Initial value' });
+    expect(result.updated).toEqual({ testData: 'Updated value' });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
 });
