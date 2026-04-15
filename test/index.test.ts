@@ -1,4 +1,5 @@
 import { directoryImport } from '../src';
+import preparePrivateOptions from '../src/prepare-private-options';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
   DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY,
@@ -262,4 +263,29 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('Fallback to process cwd when stack does not contain a valid file path', () => {
+  const OriginalError = global.Error;
+
+  class ErrorWithoutFilePathInStack extends OriginalError {
+    constructor(message?: string) {
+      super(message);
+      this.stack = 'Error: functional-error\n    at runInThisContext (node:vm:1:1)';
+    }
+  }
+
+  try {
+    global.Error = ErrorWithoutFilePathInStack as unknown as ErrorConstructor;
+
+    const options = preparePrivateOptions();
+
+    expect(options.callerDirectoryPath).toBe(process.cwd());
+    expect(options.targetDirectoryPath).toBe(process.cwd());
+    expect(options.callerFilePath).toBe(
+      `${process.cwd()}/__directory-import-fallback__.js`,
+    );
+  } finally {
+    global.Error = OriginalError;
+  }
 });
