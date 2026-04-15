@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 import {
@@ -8,22 +9,29 @@ import {
 } from './types.d';
 
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
+  const fallbackCallerDirectoryPath = process.cwd();
+  const fallbackCallerFilePath = path.resolve(fallbackCallerDirectoryPath, '__directory-import-fallback__.js');
+
   const options = {
     includeSubdirectories: true,
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: path.resolve('/'),
-    callerDirectoryPath: path.resolve('/'),
-    targetDirectoryPath: path.resolve('/'),
+    callerFilePath: fallbackCallerFilePath,
+    callerDirectoryPath: fallbackCallerDirectoryPath,
+    targetDirectoryPath: fallbackCallerDirectoryPath,
     forceReload: false,
   };
 
-  options.callerFilePath =
+  const callerFilePathFromStack =
     (new Error('functional-error').stack as string)
       .split('\n')[4]
       // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
+      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0];
+
+  if (callerFilePathFromStack && fs.existsSync(callerFilePathFromStack)) {
+    options.callerFilePath = callerFilePathFromStack;
+  }
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
