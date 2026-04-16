@@ -1,4 +1,5 @@
 import { directoryImport } from '../src';
+import preparePrivateOptions from '../src/prepare-private-options';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
   DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY,
@@ -7,6 +8,29 @@ import {
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
 import fs from 'fs';
+
+test('Fallback to current working directory when caller path is unavailable in stack trace', () => {
+  const OriginalError = Error;
+
+  class ErrorWithUnresolvableCallerPath extends OriginalError {
+    constructor(message?: string) {
+      super(message);
+      this.stack = 'Error: functional-error\n    at [stdin]:1:1';
+    }
+  }
+
+  (global as unknown as { Error: ErrorConstructor }).Error =
+    ErrorWithUnresolvableCallerPath as unknown as ErrorConstructor;
+
+  try {
+    const options = preparePrivateOptions({ forceReload: false });
+
+    expect(options.callerDirectoryPath).toBe(process.cwd());
+    expect(options.targetDirectoryPath).toBe(process.cwd());
+  } finally {
+    (global as unknown as { Error: ErrorConstructor }).Error = OriginalError;
+  }
+});
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
