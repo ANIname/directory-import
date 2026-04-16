@@ -13,9 +13,10 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: path.resolve('/'),
-    callerDirectoryPath: path.resolve('/'),
-    targetDirectoryPath: path.resolve('/'),
+    // Use cwd as a safe fallback when stack parsing fails (for example, stdin/eval execution).
+    callerFilePath: path.resolve(process.cwd(), 'index.js'),
+    callerDirectoryPath: path.resolve(process.cwd()),
+    targetDirectoryPath: path.resolve(process.cwd()),
     forceReload: false,
   };
 
