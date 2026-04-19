@@ -1,4 +1,5 @@
 import { directoryImport } from '../src';
+import preparePrivateOptions from '../src/prepare-private-options';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
   DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY,
@@ -262,4 +263,26 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('Use process cwd fallback when stack trace has no file path', () => {
+  const originalErrorConstructor = global.Error;
+
+  class ErrorWithoutFilePath extends originalErrorConstructor {
+    constructor(message?: string) {
+      super(message);
+      this.stack = `Error: ${message ?? ''}\n    at line-1\n    at line-2\n    at line-3\n    at line-4\n    at line-5`;
+    }
+  }
+
+  global.Error = ErrorWithoutFilePath as unknown as ErrorConstructor;
+
+  try {
+    const preparedOptions = preparePrivateOptions();
+
+    expect(preparedOptions.callerDirectoryPath).toBe(process.cwd());
+    expect(preparedOptions.targetDirectoryPath).toBe(process.cwd());
+  } finally {
+    global.Error = originalErrorConstructor;
+  }
 });
