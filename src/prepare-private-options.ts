@@ -8,26 +8,22 @@ import {
 } from './types.d';
 
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
-  const options = {
+  const fallbackCallerFilePath = path.join(process.cwd(), '__directory-import-caller__.js');
+  const stackLine = (new Error('functional-error').stack as string)?.split('\n')[4];
+  // eslint-disable-next-line security/detect-unsafe-regex
+  const callerFilePath = stackLine?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || fallbackCallerFilePath;
+  const callerDirectoryPath = path.dirname(callerFilePath);
+
+  return {
     includeSubdirectories: true,
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: path.resolve('/'),
-    callerDirectoryPath: path.resolve('/'),
-    targetDirectoryPath: path.resolve('/'),
+    callerFilePath,
+    callerDirectoryPath,
+    targetDirectoryPath: callerDirectoryPath,
     forceReload: false,
   };
-
-  options.callerFilePath =
-    (new Error('functional-error').stack as string)
-      .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
-
-  options.callerDirectoryPath = path.dirname(options.callerFilePath);
-  options.targetDirectoryPath = options.callerDirectoryPath;
-  return options;
 };
 
 /**

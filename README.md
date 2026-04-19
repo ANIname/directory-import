@@ -341,6 +341,9 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 #### Added
 - Add forceReload option.
 
+#### Fixed
+- Avoid scanning the filesystem root when caller path cannot be extracted from stack trace.
+
 ### [3.3.1] - 2024-03-27
 
 #### Fixed
