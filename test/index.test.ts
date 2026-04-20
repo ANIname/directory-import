@@ -7,6 +7,8 @@ import {
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
 import fs from 'fs';
+import os from 'node:os';
+import path from 'node:path';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -265,18 +267,23 @@ test('Import modules without cache', () => {
 });
 
 test('Import modules without cache should refresh transitive dependencies', () => {
-  const sampleFilePath = `${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`;
-  const originalSampleFileContent = fs.readFileSync(sampleFilePath, 'utf8');
-  const containerModulePath = `${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/container-module.js`;
+  const tempDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
+  const baseModulePath = path.join(tempDirectoryPath, 'base-module.js');
+  const containerModulePath = path.join(tempDirectoryPath, 'container-module.js');
 
   try {
     fs.writeFileSync(
+      baseModulePath,
+      "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n",
+    );
+
+    fs.writeFileSync(
       containerModulePath,
-      "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = require('./sample-file-2.js');\n",
+      "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = require('./base-module.js');\n",
     );
 
     const initialImport = directoryImport({
-      targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
+      targetDirectoryPath: tempDirectoryPath,
       importPattern: /container-module\.js$/,
       forceReload: true,
     });
@@ -284,22 +291,18 @@ test('Import modules without cache should refresh transitive dependencies', () =
     expect(initialImport['/container-module.js']).toEqual({ testData: 'Hello World!' });
 
     fs.writeFileSync(
-      sampleFilePath,
+      baseModulePath,
       "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n",
     );
 
     const reloadedImport = directoryImport({
-      targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
+      targetDirectoryPath: tempDirectoryPath,
       importPattern: /container-module\.js$/,
       forceReload: true,
     });
 
     expect(reloadedImport['/container-module.js']).toEqual({ testData: 'Hello World Changed!' });
   } finally {
-    if (fs.existsSync(containerModulePath)) {
-      fs.unlinkSync(containerModulePath);
-    }
-
-    fs.writeFileSync(sampleFilePath, originalSampleFileContent);
+    fs.rmSync(tempDirectoryPath, { recursive: true, force: true });
   }
 });
