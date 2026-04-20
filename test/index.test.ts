@@ -266,7 +266,7 @@ test('Import modules without cache', () => {
 });
 
 test('Import modules without cache should refresh transitive dependencies', () => {
-  const reloadVerificationScript = String.raw`
+  const reloadVerificationScript = `
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -277,20 +277,20 @@ const baseModulePath = path.join(temporaryDirectoryPath, 'base-module.js');
 const containerModulePath = path.join(temporaryDirectoryPath, 'container-module.js');
 
 try {
-  fs.writeFileSync(baseModulePath, "module.exports = { testData: 'Hello World!' };\\n");
-  fs.writeFileSync(containerModulePath, "module.exports = require('./base-module.js');\\n");
+  fs.writeFileSync(baseModulePath, "module.exports = { testData: 'Hello World!' };\n");
+  fs.writeFileSync(containerModulePath, "module.exports = require('./base-module.js');\n");
 
   const initialImport = directoryImport({
     targetDirectoryPath: temporaryDirectoryPath,
-    importPattern: /container-module\.js$/,
+    importPattern: /container-module[.]js$/,
     forceReload: true,
   });
 
-  fs.writeFileSync(baseModulePath, "module.exports = { testData: 'Hello World Changed!' };\\n");
+  fs.writeFileSync(baseModulePath, "module.exports = { testData: 'Hello World Changed!' };\n");
 
   const reloadedImport = directoryImport({
     targetDirectoryPath: temporaryDirectoryPath,
-    importPattern: /container-module\.js$/,
+    importPattern: /container-module[.]js$/,
     forceReload: true,
   });
 
