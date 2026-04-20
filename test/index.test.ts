@@ -1,5 +1,6 @@
 import { directoryImport } from '../src';
 import { ImportedModulesPublicOptions } from '../src/types.d';
+import { execFileSync } from 'node:child_process';
 import {
   DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY,
   DEFAULT_EXPECTED_CALLBACK_RESULTS_FROM_SAMPLE_DIRECTORY,
@@ -262,4 +263,60 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('Import modules without cache should refresh transitive dependencies', () => {
+  const reloadVerificationScript = String.raw`
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { directoryImport } = require('./src');
+
+const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
+const baseModulePath = path.join(temporaryDirectoryPath, 'base-module.js');
+const containerModulePath = path.join(temporaryDirectoryPath, 'container-module.js');
+
+try {
+  fs.writeFileSync(baseModulePath, "module.exports = { testData: 'Hello World!' };\n");
+  fs.writeFileSync(containerModulePath, "module.exports = require('./base-module.js');\n");
+
+  const initialImport = directoryImport({
+    targetDirectoryPath: temporaryDirectoryPath,
+    importPattern: /container-module[.]js$/,
+    forceReload: true,
+  });
+
+  fs.writeFileSync(baseModulePath, "module.exports = { testData: 'Hello World Changed!' };\n");
+
+  const reloadedImport = directoryImport({
+    targetDirectoryPath: temporaryDirectoryPath,
+    importPattern: /container-module[.]js$/,
+    forceReload: true,
+  });
+
+  process.stdout.write(
+    JSON.stringify({
+      initial: initialImport['/container-module.js'],
+      reloaded: reloadedImport['/container-module.js'],
+    }),
+  );
+} finally {
+  fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+}
+`;
+  const scriptOutput = execFileSync(
+    process.execPath,
+    ['-r', 'ts-node/register', '-e', reloadVerificationScript],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+    },
+  ) as string;
+  const parsedOutput = JSON.parse(scriptOutput) as {
+    initial: { testData: string };
+    reloaded: { testData: string };
+  };
+
+  expect(parsedOutput.initial).toEqual({ testData: 'Hello World!' });
+  expect(parsedOutput.reloaded).toEqual({ testData: 'Hello World Changed!' });
 });
