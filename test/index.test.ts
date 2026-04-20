@@ -266,7 +266,7 @@ test('Import modules without cache', () => {
 });
 
 test('Import modules without cache should refresh transitive dependencies', () => {
-  const reloadVerificationScript = `
+  const reloadVerificationScript = String.raw`
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
