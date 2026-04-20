@@ -282,7 +282,7 @@ try {
 
   const initialImport = directoryImport({
     targetDirectoryPath: temporaryDirectoryPath,
-    importPattern: /container-module\\.js$/,
+    importPattern: /container-module\.js$/,
     forceReload: true,
   });
 
@@ -290,7 +290,7 @@ try {
 
   const reloadedImport = directoryImport({
     targetDirectoryPath: temporaryDirectoryPath,
-    importPattern: /container-module\\.js$/,
+    importPattern: /container-module\.js$/,
     forceReload: true,
   });
 
