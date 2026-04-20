@@ -263,3 +263,43 @@ test('Import modules without cache', () => {
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
 });
+
+test('Import modules without cache should refresh transitive dependencies', () => {
+  const sampleFilePath = `${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`;
+  const originalSampleFileContent = fs.readFileSync(sampleFilePath, 'utf8');
+  const containerModulePath = `${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/container-module.js`;
+
+  try {
+    fs.writeFileSync(
+      containerModulePath,
+      "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = require('./sample-file-2.js');\n",
+    );
+
+    const initialImport = directoryImport({
+      targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
+      importPattern: /container-module\.js$/,
+      forceReload: true,
+    });
+
+    expect(initialImport['/container-module.js']).toEqual({ testData: 'Hello World!' });
+
+    fs.writeFileSync(
+      sampleFilePath,
+      "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n",
+    );
+
+    const reloadedImport = directoryImport({
+      targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
+      importPattern: /container-module\.js$/,
+      forceReload: true,
+    });
+
+    expect(reloadedImport['/container-module.js']).toEqual({ testData: 'Hello World Changed!' });
+  } finally {
+    if (fs.existsSync(containerModulePath)) {
+      fs.unlinkSync(containerModulePath);
+    }
+
+    fs.writeFileSync(sampleFilePath, originalSampleFileContent);
+  }
+});
