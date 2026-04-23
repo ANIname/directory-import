@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import { directoryImport } from '../src';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
@@ -6,7 +10,6 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -266,8 +269,11 @@ test('Import modules without cache', () => {
 
 test('Import modules with object options when caller stack path is unavailable', () => {
   const originalPrepareStackTrace = Error.prepareStackTrace;
+  const originalWorkingDirectory = process.cwd();
+  const temporaryWorkingDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-test-'));
 
   try {
+    process.chdir(temporaryWorkingDirectory);
     Error.prepareStackTrace = () => 'Error\n    at missingCallerPath';
 
     const result = directoryImport({
@@ -277,6 +283,8 @@ test('Import modules with object options when caller stack path is unavailable',
 
     expect(result).toEqual({});
   } finally {
+    process.chdir(originalWorkingDirectory);
+    fs.rmSync(temporaryWorkingDirectory, { recursive: true, force: true });
     Error.prepareStackTrace = originalPrepareStackTrace;
   }
 });
