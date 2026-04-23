@@ -7,26 +7,42 @@ import {
   ImportModulesMode,
 } from './types.d';
 
+const CALLER_STACK_LINE_INDEX = 4;
+const CALLER_FILE_PATH_REGEX = /(?:file:\/\/)?((?:\/|[A-Za-z]:\\)[^:\n]+):\d+:\d+/;
+
+/**
+ * Resolve caller file path from an error stack trace.
+ * @param {string | undefined} stackTrace - Error stack trace.
+ * @returns {string | undefined} Absolute caller file path when available.
+ */
+function resolveCallerFilePath(stackTrace: string | undefined): string | undefined {
+  const callerStackLine = stackTrace?.split('\n')[CALLER_STACK_LINE_INDEX];
+  return callerStackLine?.match(CALLER_FILE_PATH_REGEX)?.[1];
+}
+
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
+  const fallbackCallerDirectoryPath = process.cwd();
+  const fallbackCallerFilePath = path.join(fallbackCallerDirectoryPath, '__directory-import__.js');
+
   const options = {
     includeSubdirectories: true,
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: path.resolve('/'),
-    callerDirectoryPath: path.resolve('/'),
-    targetDirectoryPath: path.resolve('/'),
+    callerFilePath: fallbackCallerFilePath,
+    callerDirectoryPath: fallbackCallerDirectoryPath,
+    targetDirectoryPath: fallbackCallerDirectoryPath,
     forceReload: false,
   };
 
-  options.callerFilePath =
-    (new Error('functional-error').stack as string)
-      .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
+  const callerFilePathFromStack = resolveCallerFilePath(new Error('functional-error').stack);
 
-  options.callerDirectoryPath = path.dirname(options.callerFilePath);
-  options.targetDirectoryPath = options.callerDirectoryPath;
+  if (callerFilePathFromStack) {
+    options.callerFilePath = callerFilePathFromStack;
+    options.callerDirectoryPath = path.dirname(callerFilePathFromStack);
+    options.targetDirectoryPath = options.callerDirectoryPath;
+  }
+
   return options;
 };
 
