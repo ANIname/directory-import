@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 import {
@@ -7,23 +8,52 @@ import {
   ImportModulesMode,
 } from './types.d';
 
+const STACK_TRACE_PATH_PATTERN = /(?:\()?(?<filePath>(?:[A-Za-z]:\\|\/)[^():]+):\d+:\d+\)?/;
+const DEFAULT_CALLER_FILE_NAME = 'directory-import-caller.js';
+
+/**
+ * Resolve a caller file path from a stack trace.
+ * @param {string | undefined} stackTrace - The stack trace of the caller.
+ * @returns {string} A verified existing caller file path, or a safe fallback in the current working directory.
+ */
+function resolveCallerFilePathFromStackTrace(stackTrace: string | undefined): string {
+  const defaultCallerFilePath = path.join(process.cwd(), DEFAULT_CALLER_FILE_NAME);
+
+  if (!stackTrace) {
+    return defaultCallerFilePath;
+  }
+
+  const callerStackTraceLine = stackTrace.split('\n')[4];
+  const matchedFilePath = callerStackTraceLine
+    ? STACK_TRACE_PATH_PATTERN.exec(callerStackTraceLine)?.groups?.filePath
+    : undefined;
+
+  if (!matchedFilePath) {
+    return defaultCallerFilePath;
+  }
+
+  const normalizedFilePath = path.resolve(matchedFilePath);
+
+  if (!fs.existsSync(normalizedFilePath)) {
+    return defaultCallerFilePath;
+  }
+
+  return normalizedFilePath;
+}
+
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
+  const defaultCallerDirectoryPath = process.cwd();
+  const callerFilePath = resolveCallerFilePathFromStackTrace(new Error('functional-error').stack);
   const options = {
     includeSubdirectories: true,
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: path.resolve('/'),
-    callerDirectoryPath: path.resolve('/'),
-    targetDirectoryPath: path.resolve('/'),
+    callerFilePath,
+    callerDirectoryPath: defaultCallerDirectoryPath,
+    targetDirectoryPath: defaultCallerDirectoryPath,
     forceReload: false,
   };
-
-  options.callerFilePath =
-    (new Error('functional-error').stack as string)
-      .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
