@@ -263,3 +263,20 @@ test('Import modules without cache', () => {
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
 });
+
+test('Resolve caller path from cwd when stack trace contains a non-existent caller path', () => {
+  const mockedStackTrace = [
+    'Error: functional-error',
+    '    at getDefaultOptions (/workspace/src/prepare-private-options.ts:46:57)',
+    '    at preparePrivateOptions (/workspace/src/prepare-private-options.ts:71:24)',
+    '    at directoryImport (/workspace/src/index.ts:81:21)',
+    '    at /vm:1:1',
+  ].join('\n');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { resolveCallerFilePathFromStackTrace } = require('../src/prepare-private-options') as {
+    resolveCallerFilePathFromStackTrace: (stackTrace: string) => string;
+  };
+  const resolvedCallerPath = resolveCallerFilePathFromStackTrace(mockedStackTrace);
+
+  expect(resolvedCallerPath).toEqual('/workspace/directory-import-caller.js');
+});
