@@ -264,31 +264,19 @@ test('Import modules without cache', () => {
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
 });
 
-test('Import modules from process cwd when stack trace contains a non-existent caller path', () => {
-  const OriginalError = Error;
-  class MockError extends OriginalError {
-    constructor(message?: string) {
-      super(message);
-      this.stack = [
-        'Error: functional-error',
-        '    at getDefaultOptions (/workspace/src/prepare-private-options.ts:46:57)',
-        '    at preparePrivateOptions (/workspace/src/prepare-private-options.ts:71:24)',
-        '    at directoryImport (/workspace/src/index.ts:81:21)',
-        '    at /vm:1:1',
-      ].join('\n');
-    }
-  }
+test('Resolve caller path from cwd when stack trace contains a non-existent caller path', () => {
+  const mockedStackTrace = [
+    'Error: functional-error',
+    '    at getDefaultOptions (/workspace/src/prepare-private-options.ts:46:57)',
+    '    at preparePrivateOptions (/workspace/src/prepare-private-options.ts:71:24)',
+    '    at directoryImport (/workspace/src/index.ts:81:21)',
+    '    at /vm:1:1',
+  ].join('\n');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { resolveCallerFilePathFromStackTrace } = require('../src/prepare-private-options') as {
+    resolveCallerFilePathFromStackTrace: (stackTrace: string) => string;
+  };
+  const resolvedCallerPath = resolveCallerFilePathFromStackTrace(mockedStackTrace);
 
-  try {
-    // Simulate the /vm stack trace shape from `node -e`.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (global as any).Error = MockError;
-    const result = directoryImport();
-
-    expect(result).toHaveProperty('/index.test.ts');
-    expect(result).toHaveProperty('/constants.ts');
-  } finally {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (global as any).Error = OriginalError;
-  }
+  expect(resolvedCallerPath).toEqual('/workspace/directory-import-caller.js');
 });

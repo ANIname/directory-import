@@ -16,7 +16,7 @@ const DEFAULT_CALLER_FILE_NAME = 'directory-import-caller.js';
  * @param {string | undefined} stackTrace - The stack trace of the caller.
  * @returns {string} A verified existing caller file path, or a safe fallback in the current working directory.
  */
-function resolveCallerFilePathFromStackTrace(stackTrace: string | undefined): string {
+export function resolveCallerFilePathFromStackTrace(stackTrace: string | undefined): string {
   const defaultCallerFilePath = path.join(process.cwd(), DEFAULT_CALLER_FILE_NAME);
 
   if (!stackTrace) {
@@ -25,7 +25,7 @@ function resolveCallerFilePathFromStackTrace(stackTrace: string | undefined): st
 
   const callerStackTraceLine = stackTrace.split('\n')[4];
   const matchedFilePath = callerStackTraceLine
-    ? STACK_TRACE_PATH_PATTERN.exec(callerStackTraceLine)?.groups?.filePath
+    ? STACK_TRACE_PATH_PATTERN.exec(callerStackTraceLine)?.groups?.['filePath']
     : undefined;
 
   if (!matchedFilePath) {
