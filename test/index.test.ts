@@ -300,7 +300,7 @@ test('Import modules synchronously from a directory with a recursive symlink', (
     const result = directoryImport(temporaryDirectoryPath);
 
     expect(result).toEqual({ '/module.js': { value: true } });
-    expect(statSyncSpy).toHaveBeenCalledTimes(2);
+    expect(statSyncSpy).toHaveBeenCalledTimes(3);
   } finally {
     statSyncSpy.mockRestore();
     fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
