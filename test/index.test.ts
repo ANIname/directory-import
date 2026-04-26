@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { directoryImport } from '../src';
-import { ImportedModules, ImportedModulesPublicOptions } from '../src/types.d';
+import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
   DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY,
   DEFAULT_EXPECTED_CALLBACK_RESULTS_FROM_SAMPLE_DIRECTORY,
@@ -312,9 +312,10 @@ test('Import modules asynchronously from a directory with a recursive symlink', 
   const statSpy = jest.spyOn(fs.promises, 'stat');
 
   try {
-    const result = directoryImport(temporaryDirectoryPath, 'async') as Promise<ImportedModules>;
+    const result = directoryImport(temporaryDirectoryPath, 'async');
 
-    await expect(result).resolves.toEqual({ '/module.js': { value: true } });
+    expect(result).toBeInstanceOf(Promise);
+    expect(await result).toEqual({ '/module.js': { value: true } });
     expect(statSpy).toHaveBeenCalledTimes(2);
   } finally {
     statSpy.mockRestore();
