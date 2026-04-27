@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import { directoryImport } from '../src';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
@@ -6,7 +10,6 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -262,4 +265,34 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('Import modules without cache through a symlinked directory', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
+  const realDirectoryPath = path.join(temporaryDirectoryPath, 'real-directory');
+  const symlinkDirectoryPath = path.join(temporaryDirectoryPath, 'symlink-directory');
+  const modulePath = path.join(realDirectoryPath, 'sample-file.js');
+
+  fs.mkdirSync(realDirectoryPath);
+  fs.symlinkSync(realDirectoryPath, symlinkDirectoryPath, 'dir');
+
+  try {
+    fs.writeFileSync(modulePath, "module.exports = { testData: 'Initial value' };\n");
+
+    const cachedResult = directoryImport(symlinkDirectoryPath);
+
+    expect(cachedResult['/sample-file.js']).toEqual({ testData: 'Initial value' });
+
+    fs.writeFileSync(modulePath, "module.exports = { testData: 'Changed value' };\n");
+
+    const reloadedResult = directoryImport({
+      targetDirectoryPath: symlinkDirectoryPath,
+      forceReload: true,
+    });
+
+    expect(reloadedResult['/sample-file.js']).toEqual({ testData: 'Changed value' });
+  } finally {
+    delete require.cache[require.resolve(modulePath)];
+    fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+  }
 });
