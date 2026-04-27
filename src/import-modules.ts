@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 import readDirectoryAsync from './directory-reader-async';
@@ -79,9 +80,13 @@ function importModule(
 
   if (options.forceReload) {
     const resolvedModulePath = require.resolve(filePath);
+    const realModulePath = fs.realpathSync(filePath);
+    const resolvedRealModulePath = require.resolve(realModulePath);
 
     // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
     delete require.cache[resolvedModulePath];
+    // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
+    delete require.cache[resolvedRealModulePath];
   }
 
   // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
