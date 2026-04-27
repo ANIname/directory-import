@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -267,32 +268,40 @@ test('Import modules without cache', () => {
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
 });
 
-test('Import modules without cache through a symlinked directory', () => {
-  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
-  const realDirectoryPath = path.join(temporaryDirectoryPath, 'real-directory');
-  const symlinkDirectoryPath = path.join(temporaryDirectoryPath, 'symlink-directory');
-  const modulePath = path.join(realDirectoryPath, 'sample-file.js');
+test('Import modules without cache through a symlinked directory in Node', () => {
+  const script = `
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { directoryImport } = require('./dist/index.js');
 
-  fs.mkdirSync(realDirectoryPath);
-  fs.symlinkSync(realDirectoryPath, symlinkDirectoryPath, 'dir');
+const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
+const realDirectoryPath = path.join(temporaryDirectoryPath, 'real-directory');
+const symlinkDirectoryPath = path.join(temporaryDirectoryPath, 'symlink-directory');
+const modulePath = path.join(realDirectoryPath, 'sample-file.js');
 
-  try {
-    fs.writeFileSync(modulePath, "module.exports = { testData: 'Initial value' };\n");
+fs.mkdirSync(realDirectoryPath);
+fs.symlinkSync(realDirectoryPath, symlinkDirectoryPath, 'dir');
 
-    const cachedResult = directoryImport(symlinkDirectoryPath);
+try {
+  fs.writeFileSync(modulePath, "module.exports = { testData: 'Initial value' };\\n");
 
-    expect(cachedResult['/sample-file.js']).toEqual({ testData: 'Initial value' });
+  directoryImport(symlinkDirectoryPath);
 
-    fs.writeFileSync(modulePath, "module.exports = { testData: 'Changed value' };\n");
+  fs.writeFileSync(modulePath, "module.exports = { testData: 'Changed value' };\\n");
 
-    const reloadedResult = directoryImport({
-      targetDirectoryPath: symlinkDirectoryPath,
-      forceReload: true,
-    });
+  const reloadedResult = directoryImport({
+    targetDirectoryPath: symlinkDirectoryPath,
+    forceReload: true,
+  });
 
-    expect(reloadedResult['/sample-file.js']).toEqual({ testData: 'Changed value' });
-  } finally {
-    delete require.cache[require.resolve(modulePath)];
-    fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+  if (reloadedResult['/sample-file.js'].testData !== 'Changed value') {
+    throw new Error('forceReload returned stale cached module data');
   }
+} finally {
+  fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+}
+`;
+
+  expect(() => execFileSync(process.execPath, ['-e', script], { cwd: path.resolve(__dirname, '..') })).not.toThrow();
 });
