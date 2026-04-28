@@ -1,5 +1,7 @@
 import { directoryImport } from '../src';
 import { ImportedModulesPublicOptions } from '../src/types.d';
+import os from 'node:os';
+import path from 'node:path';
 import {
   DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY,
   DEFAULT_EXPECTED_CALLBACK_RESULTS_FROM_SAMPLE_DIRECTORY,
@@ -20,6 +22,59 @@ test('Import modules from the default (current) directory synchronously', () => 
       DEFAULT_EXPECTED_CALLBACK_RESULTS_FROM_SAMPLE_DIRECTORY,
     },
   });
+});
+
+test('Falls back to the process working directory when caller detection fails', () => {
+  const originalWorkingDirectory = process.cwd();
+  const originalStackTraceLimit = Error.stackTraceLimit;
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-default-'));
+
+  fs.writeFileSync(path.join(temporaryDirectoryPath, 'fallback-module.js'), 'module.exports = { fallback: true };\n');
+
+  try {
+    Error.stackTraceLimit = 0;
+    process.chdir(temporaryDirectoryPath);
+
+    expect(directoryImport()).toEqual({
+      '/fallback-module.js': { fallback: true },
+    });
+  } finally {
+    Error.stackTraceLimit = originalStackTraceLimit;
+    process.chdir(originalWorkingDirectory);
+    fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+  }
+});
+
+test('Skips recursive symbolic links while importing modules synchronously', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-symlink-sync-'));
+
+  fs.writeFileSync(path.join(temporaryDirectoryPath, 'module.js'), 'module.exports = { value: true };\n');
+  fs.symlinkSync(temporaryDirectoryPath, path.join(temporaryDirectoryPath, 'recursive-link'), 'dir');
+
+  try {
+    expect(directoryImport({ targetDirectoryPath: temporaryDirectoryPath })).toEqual({
+      '/module.js': { value: true },
+    });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+  }
+});
+
+test('Skips recursive symbolic links while importing modules asynchronously', async () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-symlink-async-'));
+
+  fs.writeFileSync(path.join(temporaryDirectoryPath, 'module.js'), 'module.exports = { value: true };\n');
+  fs.symlinkSync(temporaryDirectoryPath, path.join(temporaryDirectoryPath, 'recursive-link'), 'dir');
+
+  try {
+    await expect(
+      directoryImport({ targetDirectoryPath: temporaryDirectoryPath, importMode: 'async' }),
+    ).resolves.toEqual({
+      '/module.js': { value: true },
+    });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+  }
 });
 
 test('Import modules from the default (current) directory synchronously and call the provided callback for each imported module', () => {
