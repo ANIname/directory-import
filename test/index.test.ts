@@ -6,7 +6,9 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -221,6 +223,51 @@ test('Import modules with specified options and call the provided callback for e
 
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
   expect(callbackResults).toEqual(DEFAULT_EXPECTED_CALLBACK_RESULTS_FROM_SAMPLE_DIRECTORY);
+});
+
+test('Import modules synchronously without following recursive symlink directories', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-symlink-sync-'));
+
+  try {
+    fs.writeFileSync(
+      path.join(temporaryDirectoryPath, 'sample-module.js'),
+      "module.exports = { testData: 'Hello World!' };\n",
+    );
+    fs.symlinkSync(temporaryDirectoryPath, path.join(temporaryDirectoryPath, 'recursive-link'), 'dir');
+
+    const result = directoryImport({
+      targetDirectoryPath: temporaryDirectoryPath,
+    });
+
+    expect(result).toEqual({
+      '/sample-module.js': { testData: 'Hello World!' },
+    });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
+});
+
+test('Import modules asynchronously without following recursive symlink directories', async () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-symlink-async-'));
+
+  try {
+    fs.writeFileSync(
+      path.join(temporaryDirectoryPath, 'sample-module.js'),
+      "module.exports = { testData: 'Hello World!' };\n",
+    );
+    fs.symlinkSync(temporaryDirectoryPath, path.join(temporaryDirectoryPath, 'recursive-link'), 'dir');
+
+    const result = directoryImport({
+      targetDirectoryPath: temporaryDirectoryPath,
+      importMode: 'async',
+    });
+
+    await expect(result).resolves.toEqual({
+      '/sample-module.js': { testData: 'Hello World!' },
+    });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
 });
 
 test('Import modules with cache', () => {
