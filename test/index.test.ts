@@ -6,7 +6,10 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
+import { execFileSync } from 'node:child_process';
 import fs from 'fs';
+import os from 'node:os';
+import path from 'node:path';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -262,4 +265,63 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('forceReload reloads modules imported through symlinked files', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-force-reload-'));
+  const targetDirectoryPath = path.join(temporaryDirectoryPath, 'target');
+  const symlinkDirectoryPath = path.join(temporaryDirectoryPath, 'symlink');
+  const moduleFilePath = path.join(targetDirectoryPath, 'config.js');
+  const scriptFilePath = path.join(temporaryDirectoryPath, 'verify-force-reload.js');
+
+  fs.mkdirSync(targetDirectoryPath);
+  fs.mkdirSync(symlinkDirectoryPath);
+  fs.writeFileSync(moduleFilePath, "module.exports = { value: 'initial' };\n");
+  fs.symlinkSync(moduleFilePath, path.join(symlinkDirectoryPath, 'config.js'));
+  fs.writeFileSync(
+    scriptFilePath,
+    `
+const fs = require('node:fs');
+const { directoryImport } = require(${JSON.stringify(path.resolve(__dirname, '../dist'))});
+
+const moduleFilePath = ${JSON.stringify(moduleFilePath)};
+const symlinkDirectoryPath = ${JSON.stringify(symlinkDirectoryPath)};
+
+directoryImport(symlinkDirectoryPath);
+fs.writeFileSync(moduleFilePath, "module.exports = { value: 'updated' };\\n");
+
+const result = directoryImport({
+  targetDirectoryPath: symlinkDirectoryPath,
+  forceReload: true,
+});
+
+if (result['/config.js'].value !== 'updated') {
+  throw new Error(\`Expected updated module value, received: \${result['/config.js'].value}\`);
+}
+`,
+  );
+
+  try {
+    expect(() => execFileSync(process.execPath, [scriptFilePath])).not.toThrow();
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+  }
+});
+
+test('recursive imports do not follow symlinked directories', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-symlink-loop-'));
+  const moduleFilePath = path.join(temporaryDirectoryPath, 'config.js');
+  const symlinkDirectoryPath = path.join(temporaryDirectoryPath, 'loop');
+
+  fs.writeFileSync(moduleFilePath, "module.exports = { value: 'safe' };\n");
+  fs.symlinkSync(temporaryDirectoryPath, symlinkDirectoryPath, 'dir');
+
+  try {
+    expect(directoryImport(temporaryDirectoryPath)).toEqual({
+      '/config.js': { value: 'safe' },
+    });
+  } finally {
+    delete require.cache[require.resolve(moduleFilePath)];
+    fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+  }
 });
