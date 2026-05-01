@@ -6,7 +6,9 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -262,4 +264,53 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('Import modules synchronously without following recursive directory symlinks', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
+
+  try {
+    fs.writeFileSync(path.join(temporaryDirectoryPath, 'sample-module.js'), 'module.exports = { safe: true };\n');
+    fs.symlinkSync(temporaryDirectoryPath, path.join(temporaryDirectoryPath, 'recursive-link'), 'dir');
+
+    const result = directoryImport(temporaryDirectoryPath);
+
+    expect(result).toEqual({ '/sample-module.js': { safe: true } });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+  }
+});
+
+test('Import modules asynchronously without following recursive directory symlinks', async () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
+
+  try {
+    fs.writeFileSync(path.join(temporaryDirectoryPath, 'sample-module.js'), 'module.exports = { safe: true };\n');
+    fs.symlinkSync(temporaryDirectoryPath, path.join(temporaryDirectoryPath, 'recursive-link'), 'dir');
+
+    const result = directoryImport(temporaryDirectoryPath, 'async');
+
+    await expect(result).resolves.toEqual({ '/sample-module.js': { safe: true } });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+  }
+});
+
+test('Import modules from current working directory when caller stack path is unusable', () => {
+  const originalWorkingDirectoryPath = process.cwd();
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
+  const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+  try {
+    fs.writeFileSync(path.join(temporaryDirectoryPath, 'fallback-module.js'), 'module.exports = { fallback: true };\n');
+    process.chdir(temporaryDirectoryPath);
+
+    const result = directoryImport();
+
+    expect(result).toEqual({ '/fallback-module.js': { fallback: true } });
+  } finally {
+    process.chdir(originalWorkingDirectoryPath);
+    existsSyncSpy.mockRestore();
+    fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+  }
 });
