@@ -24,13 +24,14 @@ export default async function readDirectoryAsync(
 
       const relativeItemPath = path.join(`${targetDirectoryPath}`, `${itemPath}`);
 
-      const stat = await fs.stat(relativeItemPath);
+      const stat = await fs.lstat(relativeItemPath);
+      const targetStat = stat.isSymbolicLink() ? await fs.stat(relativeItemPath) : stat;
 
-      if (stat.isDirectory() && options.includeSubdirectories) {
+      if (!stat.isSymbolicLink() && stat.isDirectory() && options.includeSubdirectories) {
         const files = await readDirectoryAsync(options, relativeItemPath);
 
         receivedFilesPaths.push(...files);
-      } else if (stat.isFile()) {
+      } else if (targetStat.isFile()) {
         receivedFilesPaths.push(relativeItemPath);
       }
 

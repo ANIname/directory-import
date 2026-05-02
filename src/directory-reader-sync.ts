@@ -25,11 +25,12 @@ export default function readDirectorySync(
   let itemsCounter = 0;
   for (itemsCounter; itemsCounter < receivedItemsPaths.length; itemsCounter += 1) {
     const itemPath = path.join(`${targetDirectoryPath}`, `${receivedItemsPaths[itemsCounter]}`);
-    const stat = fs.statSync(itemPath);
+    const stat = fs.lstatSync(itemPath);
+    const targetStat = stat.isSymbolicLink() ? fs.statSync(itemPath) : stat;
 
-    if (stat.isDirectory() && options.includeSubdirectories) {
+    if (!stat.isSymbolicLink() && stat.isDirectory() && options.includeSubdirectories) {
       receivedDirectoriesPaths.push(itemPath);
-    } else if (stat.isFile()) {
+    } else if (targetStat.isFile()) {
       receivedFilesPaths.push(itemPath);
     }
   }

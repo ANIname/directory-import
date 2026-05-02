@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import { directoryImport } from '../src';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
@@ -6,7 +10,6 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -224,42 +227,100 @@ test('Import modules with specified options and call the provided callback for e
 });
 
 test('Import modules with cache', () => {
-  const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY)
+  const sampleFilePath = path.join(DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY, 'sample-file-2.js');
+  const originalSampleFileContent = fs.readFileSync(sampleFilePath, 'utf8');
+  const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY);
 
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
 
-  // change the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
+  try {
+    fs.writeFileSync(
+      sampleFilePath,
+      "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n",
+    );
 
-  // re-import the modules
-  const result2 = directoryImport({
-    targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
-    forceReload: false,
-  });
+    const cachedResult = directoryImport({
+      targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
+      forceReload: false,
+    });
 
-  expect(result2).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
-  // revert the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+    expect(cachedResult).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
+  } finally {
+    fs.writeFileSync(sampleFilePath, originalSampleFileContent);
+    delete require.cache[require.resolve(sampleFilePath)];
+  }
 });
 
 test('Import modules without cache', () => {
-  const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY)
+  const sampleFilePath = path.join(DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY, 'sample-file-2.js');
+  const originalSampleFileContent = fs.readFileSync(sampleFilePath, 'utf8');
+  const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY);
 
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
 
-  // change the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
+  try {
+    fs.writeFileSync(
+      sampleFilePath,
+      "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n",
+    );
 
-  jest.resetModules();
+    const reloadedResult = directoryImport({
+      targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
+      forceReload: true,
+    });
 
-  // re-import the modules
-  const result2 = directoryImport({
-    targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
-    forceReload: true,
-  });
+    expect(reloadedResult['/sample-file-2.js']).toEqual({ testData: 'Hello World Changed!' });
+  } finally {
+    fs.writeFileSync(sampleFilePath, originalSampleFileContent);
+    delete require.cache[require.resolve(sampleFilePath)];
+  }
+});
 
-  expect(result2['/sample-file-2.js']).toEqual({ testData: 'Hello World Changed!' });
+test('Import modules synchronously without following recursive directory symlinks', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
 
-  // revert the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+  try {
+    fs.writeFileSync(path.join(temporaryDirectoryPath, 'sample-module.js'), 'module.exports = { safe: true };\n');
+    fs.symlinkSync(temporaryDirectoryPath, path.join(temporaryDirectoryPath, 'recursive-link'), 'dir');
+
+    const result = directoryImport(temporaryDirectoryPath);
+
+    expect(result).toEqual({ '/sample-module.js': { safe: true } });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+  }
+});
+
+test('Import modules asynchronously without following recursive directory symlinks', async () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
+
+  try {
+    fs.writeFileSync(path.join(temporaryDirectoryPath, 'sample-module.js'), 'module.exports = { safe: true };\n');
+    fs.symlinkSync(temporaryDirectoryPath, path.join(temporaryDirectoryPath, 'recursive-link'), 'dir');
+
+    const result = directoryImport(temporaryDirectoryPath, 'async');
+
+    await expect(result).resolves.toEqual({ '/sample-module.js': { safe: true } });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+  }
+});
+
+test('Import modules from current working directory when caller stack path is unusable', () => {
+  const originalWorkingDirectoryPath = process.cwd();
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
+  const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+  try {
+    fs.writeFileSync(path.join(temporaryDirectoryPath, 'fallback-module.js'), 'module.exports = { fallback: true };\n');
+    process.chdir(temporaryDirectoryPath);
+
+    const result = directoryImport();
+
+    expect(result).toEqual({ '/fallback-module.js': { fallback: true } });
+  } finally {
+    process.chdir(originalWorkingDirectoryPath);
+    existsSyncSpy.mockRestore();
+    fs.rmSync(temporaryDirectoryPath, { force: true, recursive: true });
+  }
 });
