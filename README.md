@@ -103,14 +103,14 @@ directoryImport('./sample-directory', (moduleName, modulePath, moduleData) => {
 
 ### {Object} Options properties:
 
-| Property              | Type    | Description                                                     |
-| --------------------- | ------- | --------------------------------------------------------------- |
-| includeSubdirectories | Boolean | If true, the module will import files from subdirectories       |
-| targetDirectoryPath   | String  | The path to the directory from which modules are to be imported |
-| importPattern         | RegExp  | RegExp pattern to filter files                                  |
-| importMode            | String  | The import mode. Can be 'sync' or 'async'                       |
-| limit                 | Number  | Limit the number of imported modules                            |
-| forceReload           | Boolean | If true, reload modules disabling require cache                 |
+| Property | Type | Description |
+| --- | --- | --- |
+| includeSubdirectories | Boolean | If true, imports files from subdirectories. Symbolic-link directories are skipped to avoid loops and escapes |
+| targetDirectoryPath | String | The path to the directory from which modules are to be imported |
+| importPattern | RegExp | RegExp pattern to filter files |
+| importMode | String | The import mode. Can be 'sync' or 'async' |
+| limit | Number | Limit the number of imported modules |
+| forceReload | Boolean | If true, reload modules disabling require cache |
 
 [back to top](#top)
 

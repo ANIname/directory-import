@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 import {
@@ -13,17 +14,19 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: path.resolve('/'),
-    callerDirectoryPath: path.resolve('/'),
-    targetDirectoryPath: path.resolve('/'),
+    callerFilePath: path.resolve(process.cwd(), 'index.js'),
+    callerDirectoryPath: process.cwd(),
+    targetDirectoryPath: process.cwd(),
     forceReload: false,
   };
 
-  options.callerFilePath =
+  const callerFilePath =
     (new Error('functional-error').stack as string)
       .split('\n')[4]
       // eslint-disable-next-line security/detect-unsafe-regex
       ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
+
+  options.callerFilePath = fs.existsSync(callerFilePath) ? callerFilePath : options.callerFilePath;
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
