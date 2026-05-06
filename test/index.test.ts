@@ -1,4 +1,9 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import { directoryImport } from '../src';
+import preparePrivateOptions from '../src/prepare-private-options';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
   DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY,
@@ -6,7 +11,26 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
+
+test('Default options fall back to the working directory when the caller file cannot be parsed', () => {
+  const originalErrorConstructor = global.Error;
+  const fallbackStackErrorConstructor = function Error() {
+    return {
+      stack: 'Error: functional-error\n    at node:vm:123:45\n    at internal/process/task_queues:95:5',
+    };
+  } as unknown as ErrorConstructor;
+
+  global.Error = fallbackStackErrorConstructor;
+
+  try {
+    const options = preparePrivateOptions();
+
+    expect(options.callerDirectoryPath).toBe(process.cwd());
+    expect(options.targetDirectoryPath).toBe(process.cwd());
+  } finally {
+    global.Error = originalErrorConstructor;
+  }
+});
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -221,6 +245,36 @@ test('Import modules with specified options and call the provided callback for e
 
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
   expect(callbackResults).toEqual(DEFAULT_EXPECTED_CALLBACK_RESULTS_FROM_SAMPLE_DIRECTORY);
+});
+
+test('Import modules ignores recursive symlink directories synchronously', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
+
+  try {
+    fs.writeFileSync(path.join(temporaryDirectoryPath, 'module.js'), 'module.exports = { ok: true };\n');
+    fs.symlinkSync(temporaryDirectoryPath, path.join(temporaryDirectoryPath, 'loop'), 'dir');
+
+    const result = directoryImport({ targetDirectoryPath: temporaryDirectoryPath });
+
+    expect(result).toEqual({ '/module.js': { ok: true } });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
+});
+
+test('Import modules ignores recursive symlink directories asynchronously', async () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
+
+  try {
+    fs.writeFileSync(path.join(temporaryDirectoryPath, 'module.js'), 'module.exports = { ok: true };\n');
+    fs.symlinkSync(temporaryDirectoryPath, path.join(temporaryDirectoryPath, 'loop'), 'dir');
+
+    const result = directoryImport({ targetDirectoryPath: temporaryDirectoryPath, importMode: 'async' });
+
+    expect(await result).toEqual({ '/module.js': { ok: true } });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
 });
 
 test('Import modules with cache', () => {
