@@ -26,8 +26,8 @@ function isAbsoluteFilePath(filePath: string): boolean {
  */
 function removeLineAndColumnFromStackLocation(stackLocation: string): string {
   const stackLocationParts = stackLocation.split(':');
-  const lastStackLocationPart = stackLocationParts[stackLocationParts.length - 1];
-  const secondLastStackLocationPart = stackLocationParts[stackLocationParts.length - 2];
+  const lastStackLocationPart = stackLocationParts.at(-1);
+  const secondLastStackLocationPart = stackLocationParts.at(-2);
 
   if (stackLocationParts.length >= 3 && Number.isInteger(Number(lastStackLocationPart))) {
     stackLocationParts.pop();
@@ -75,7 +75,8 @@ function getCallerFilePath(): string {
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
   const callerFilePath = getCallerFilePath();
   const callerDirectoryPath = path.dirname(callerFilePath);
-  const options = {
+
+  return {
     includeSubdirectories: true,
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
@@ -85,8 +86,6 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
     targetDirectoryPath: callerDirectoryPath,
     forceReload: false,
   };
-
-  return options;
 };
 
 /**
