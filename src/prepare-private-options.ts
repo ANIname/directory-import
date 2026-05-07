@@ -7,27 +7,85 @@ import {
   ImportModulesMode,
 } from './types.d';
 
+const DEFAULT_CALLER_FILE_NAME = 'index.js';
+const CALLER_STACK_LINE_INDEX = 5;
+
+/**
+ * Check whether a path is absolute on POSIX or Windows.
+ * @param {string} filePath - The file path to check.
+ * @returns {boolean} Whether the file path is absolute.
+ */
+function isAbsoluteFilePath(filePath: string): boolean {
+  return path.isAbsolute(filePath) || path.win32.isAbsolute(filePath);
+}
+
+/**
+ * Remove trailing line and column numbers from a stack trace location.
+ * @param {string} stackLocation - The stack trace location to normalize.
+ * @returns {string} The stack trace location without line and column suffixes.
+ */
+function removeLineAndColumnFromStackLocation(stackLocation: string): string {
+  const stackLocationParts = stackLocation.split(':');
+  const lastStackLocationPart = stackLocationParts.at(-1);
+  const secondLastStackLocationPart = stackLocationParts.at(-2);
+
+  if (stackLocationParts.length >= 3 && Number.isInteger(Number(lastStackLocationPart))) {
+    stackLocationParts.pop();
+  }
+
+  if (stackLocationParts.length >= 2 && Number.isInteger(Number(secondLastStackLocationPart))) {
+    stackLocationParts.pop();
+  }
+
+  return stackLocationParts.join(':');
+}
+
+/**
+ * Extract an absolute file path from one stack trace line.
+ * @param {string} stackLine - The stack trace line to parse.
+ * @returns {string | undefined} The absolute file path when the line contains one.
+ */
+function getFilePathFromStackLine(stackLine: string): string | undefined {
+  const trimmedStackLine = stackLine.trim();
+  const stackLocationStartIndex = trimmedStackLine.lastIndexOf('(');
+  const stackLocationEndIndex = trimmedStackLine.lastIndexOf(')');
+  const stackLocation =
+    stackLocationStartIndex >= 0 && stackLocationEndIndex > stackLocationStartIndex
+      ? trimmedStackLine.slice(stackLocationStartIndex + 1, stackLocationEndIndex)
+      : trimmedStackLine.replace(/^at\s+/, '').trim();
+  const filePath = removeLineAndColumnFromStackLocation(stackLocation);
+
+  return isAbsoluteFilePath(filePath) ? filePath : undefined;
+}
+
+/**
+ * Resolve the caller file path from the runtime stack or a safe process fallback.
+ * @returns {string} The detected caller file path, or a path inside the current working directory.
+ */
+function getCallerFilePath(): string {
+  const fallbackCallerFilePath = path.join(process.cwd(), DEFAULT_CALLER_FILE_NAME);
+  const stackLines = new Error('functional-error').stack?.split('\n') ?? [];
+  const stackCallerFilePath = stackLines[CALLER_STACK_LINE_INDEX]
+    ? getFilePathFromStackLine(stackLines[CALLER_STACK_LINE_INDEX])
+    : undefined;
+
+  return stackCallerFilePath || fallbackCallerFilePath;
+}
+
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
-  const options = {
+  const callerFilePath = getCallerFilePath();
+  const callerDirectoryPath = path.dirname(callerFilePath);
+
+  return {
     includeSubdirectories: true,
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: path.resolve('/'),
-    callerDirectoryPath: path.resolve('/'),
-    targetDirectoryPath: path.resolve('/'),
+    callerFilePath,
+    callerDirectoryPath,
+    targetDirectoryPath: callerDirectoryPath,
     forceReload: false,
   };
-
-  options.callerFilePath =
-    (new Error('functional-error').stack as string)
-      .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
-
-  options.callerDirectoryPath = path.dirname(options.callerFilePath);
-  options.targetDirectoryPath = options.callerDirectoryPath;
-  return options;
 };
 
 /**
