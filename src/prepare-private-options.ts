@@ -7,26 +7,58 @@ import {
   ImportModulesMode,
 } from './types.d';
 
+/**
+ * Check whether a stack frame belongs to this library.
+ * @param {string} filePath - The absolute file path from a stack frame.
+ * @returns {boolean} Whether the file is part of the library implementation.
+ */
+function isLibraryFilePath(filePath: string): boolean {
+  const libraryDirectoryPath = path.normalize(__dirname);
+  const normalizedFilePath = path.normalize(filePath);
+
+  return normalizedFilePath === path.normalize(__filename) || normalizedFilePath.startsWith(`${libraryDirectoryPath}${path.sep}`);
+}
+
+/**
+ * Extract a usable absolute file path from a stack trace line.
+ * @param {string} stackLine - One line from an Error stack trace.
+ * @returns {string | undefined} The absolute file path, if the line points to a user file.
+ */
+function extractCallerFilePathFromStackLine(stackLine: string): string | undefined {
+  const stackLocation =
+    stackLine.match(/\((.*):\d+:\d+\)$/)?.[1] || stackLine.match(/at (.*):\d+:\d+$/)?.[1];
+
+  if (!stackLocation || !path.isAbsolute(stackLocation) || isLibraryFilePath(stackLocation)) {
+    return undefined;
+  }
+
+  return stackLocation;
+}
+
+/**
+ * Resolve the file path that called directoryImport.
+ * @param {string | undefined} stack - The stack trace captured while preparing options.
+ * @returns {string | undefined} The caller file path when it can be identified safely.
+ */
+function getCallerFilePath(stack: string | undefined): string | undefined {
+  return stack?.split('\n').map(extractCallerFilePathFromStackLine).find(Boolean);
+}
+
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
+  const fallbackCallerDirectoryPath = process.cwd();
+  const callerFilePath = getCallerFilePath(new Error('functional-error').stack);
+  const callerDirectoryPath = callerFilePath ? path.dirname(callerFilePath) : fallbackCallerDirectoryPath;
   const options = {
     includeSubdirectories: true,
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: path.resolve('/'),
-    callerDirectoryPath: path.resolve('/'),
-    targetDirectoryPath: path.resolve('/'),
+    callerFilePath: callerFilePath || fallbackCallerDirectoryPath,
+    callerDirectoryPath,
+    targetDirectoryPath: callerDirectoryPath,
     forceReload: false,
   };
 
-  options.callerFilePath =
-    (new Error('functional-error').stack as string)
-      .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
-
-  options.callerDirectoryPath = path.dirname(options.callerFilePath);
-  options.targetDirectoryPath = options.callerDirectoryPath;
   return options;
 };
 

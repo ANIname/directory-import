@@ -25,7 +25,7 @@ export default function readDirectorySync(
   let itemsCounter = 0;
   for (itemsCounter; itemsCounter < receivedItemsPaths.length; itemsCounter += 1) {
     const itemPath = path.join(`${targetDirectoryPath}`, `${receivedItemsPaths[itemsCounter]}`);
-    const stat = fs.statSync(itemPath);
+    const stat = fs.lstatSync(itemPath);
 
     if (stat.isDirectory() && options.includeSubdirectories) {
       receivedDirectoriesPaths.push(itemPath);

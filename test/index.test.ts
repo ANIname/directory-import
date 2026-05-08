@@ -1,12 +1,14 @@
 import { directoryImport } from '../src';
 import { ImportedModulesPublicOptions } from '../src/types.d';
+import os from 'node:os';
+import path from 'node:path';
 import {
   DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY,
   DEFAULT_EXPECTED_CALLBACK_RESULTS_FROM_SAMPLE_DIRECTORY,
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
+import fs from 'node:fs';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -262,4 +264,66 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('Import modules from the working directory when the caller stack has no file path', () => {
+  const originalWorkingDirectoryPath = process.cwd();
+  const originalErrorConstructor = global.Error;
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-stack-fallback-'));
+  const moduleFilePath = path.join(temporaryDirectoryPath, 'fallback-sample.js');
+  let importedModules: unknown;
+
+  class StackWithoutFilePathError extends originalErrorConstructor {
+    constructor(message?: string) {
+      super(message);
+      this.stack = 'Error: functional-error\n    at directoryImport ([eval]:1:42)';
+    }
+  }
+
+  fs.writeFileSync(moduleFilePath, 'module.exports = { fallback: true };\n');
+
+  try {
+    process.chdir(temporaryDirectoryPath);
+    global.Error = StackWithoutFilePathError as unknown as ErrorConstructor;
+    importedModules = directoryImport();
+  } finally {
+    global.Error = originalErrorConstructor;
+    process.chdir(originalWorkingDirectoryPath);
+    delete require.cache[require.resolve(moduleFilePath)];
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
+
+  expect(importedModules).toEqual({ '/fallback-sample.js': { fallback: true } });
+});
+
+test('Skip recursive symbolic link directories while importing modules', async () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-symlink-loop-'));
+  const moduleFilePath = path.join(temporaryDirectoryPath, 'safe-module.js');
+  const symbolicLinkPath = path.join(temporaryDirectoryPath, 'loop');
+
+  fs.writeFileSync(moduleFilePath, 'module.exports = { safe: true };\n');
+
+  try {
+    fs.symlinkSync(temporaryDirectoryPath, symbolicLinkPath, 'dir');
+  } catch (error) {
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+
+    if ((error as NodeJS.ErrnoException).code === 'EPERM') {
+      return;
+    }
+
+    throw error;
+  }
+
+  try {
+    expect(directoryImport({ targetDirectoryPath: temporaryDirectoryPath })).toEqual({
+      '/safe-module.js': { safe: true },
+    });
+    expect(await directoryImport({ targetDirectoryPath: temporaryDirectoryPath, importMode: 'async' })).toEqual({
+      '/safe-module.js': { safe: true },
+    });
+  } finally {
+    delete require.cache[require.resolve(moduleFilePath)];
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
 });
