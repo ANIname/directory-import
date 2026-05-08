@@ -7,27 +7,61 @@ import {
   ImportModulesMode,
 } from './types.d';
 
+const LIBRARY_STACK_FRAME_NAMES = new Set(['getDefaultOptions', 'preparePrivateOptions', 'directoryImport']);
+
+/**
+ * Check whether a stack frame belongs to this library.
+ * @param {string} stackLine - One line from an Error stack trace.
+ * @returns {boolean} Whether the frame is part of the library implementation.
+ */
+function isLibraryStackFrame(stackLine: string): boolean {
+  const stackFrameName = stackLine.match(/^\s*at\s+([^\s(]+)/)?.[1];
+
+  return stackFrameName ? LIBRARY_STACK_FRAME_NAMES.has(stackFrameName) : false;
+}
+
+/**
+ * Extract a usable absolute file path from a stack trace line.
+ * @param {string} stackLine - One line from an Error stack trace.
+ * @returns {string | undefined} The absolute file path, if the line points to a user file.
+ */
+function extractCallerFilePathFromStackLine(stackLine: string): string | undefined {
+  const stackLocation = stackLine.match(/\((.*):\d+:\d+\)$/)?.[1] || stackLine.match(/at (.*):\d+:\d+$/)?.[1];
+
+  if (!stackLocation || !path.isAbsolute(stackLocation) || isLibraryStackFrame(stackLine)) {
+    return undefined;
+  }
+
+  return stackLocation;
+}
+
+/**
+ * Resolve the file path that called directoryImport.
+ * @param {string | undefined} stack - The stack trace captured while preparing options.
+ * @returns {string | undefined} The caller file path when it can be identified safely.
+ */
+function getCallerFilePath(stack: string | undefined): string | undefined {
+  return stack
+    ?.split('\n')
+    .map((stackLine) => extractCallerFilePathFromStackLine(stackLine))
+    .find(Boolean);
+}
+
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
-  const options = {
+  const fallbackCallerDirectoryPath = process.cwd();
+  const callerFilePath = getCallerFilePath(new Error('functional-error').stack);
+  const callerDirectoryPath = callerFilePath ? path.dirname(callerFilePath) : fallbackCallerDirectoryPath;
+
+  return {
     includeSubdirectories: true,
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: path.resolve('/'),
-    callerDirectoryPath: path.resolve('/'),
-    targetDirectoryPath: path.resolve('/'),
+    callerFilePath: callerFilePath || fallbackCallerDirectoryPath,
+    callerDirectoryPath,
+    targetDirectoryPath: callerDirectoryPath,
     forceReload: false,
   };
-
-  options.callerFilePath =
-    (new Error('functional-error').stack as string)
-      .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
-
-  options.callerDirectoryPath = path.dirname(options.callerFilePath);
-  options.targetDirectoryPath = options.callerDirectoryPath;
-  return options;
 };
 
 /**
