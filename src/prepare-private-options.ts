@@ -8,6 +8,12 @@ import {
 } from './types.d';
 
 const DEFAULT_CALLER_FILE_NAME = 'index.js';
+const LIBRARY_STACK_FRAME_NAMES = new Set([
+  'directoryImport',
+  'getCallerFilePath',
+  'getDefaultOptions',
+  'preparePrivateOptions',
+]);
 
 /**
  * Check whether a path is absolute on POSIX or Windows.
@@ -19,19 +25,14 @@ function isAbsoluteFilePath(filePath: string): boolean {
 }
 
 /**
- * Check whether a stack path belongs to this library implementation.
- * @param {string} filePath - The stack frame file path to check.
- * @returns {boolean} Whether the path points to this library.
+ * Check whether a stack frame belongs to this library implementation.
+ * @param {string} stackLine - The stack trace line to check.
+ * @returns {boolean} Whether the stack frame points to this library.
  */
-function isLibraryFilePath(filePath: string): boolean {
-  const normalizedLibraryDirectoryPath = path.normalize(__dirname);
-  const normalizedLibraryFilePath = path.normalize(__filename);
-  const normalizedFilePath = path.normalize(filePath);
+function isLibraryStackFrame(stackLine: string): boolean {
+  const stackFrameName = stackLine.match(/^\s*at\s+([^\s(]+)/)?.[1]?.split('.').at(-1);
 
-  return (
-    normalizedFilePath === normalizedLibraryFilePath ||
-    normalizedFilePath.startsWith(`${normalizedLibraryDirectoryPath}${path.sep}`)
-  );
+  return stackFrameName ? LIBRARY_STACK_FRAME_NAMES.has(stackFrameName) : false;
 }
 
 /**
@@ -70,7 +71,7 @@ function getCallerFilePathFromStackLine(stackLine: string): string | undefined {
       : trimmedStackLine.replace(/^at\s+/, '').trim();
   const filePath = removeLineAndColumnFromStackLocation(stackLocation);
 
-  if (!isAbsoluteFilePath(filePath) || isLibraryFilePath(filePath)) {
+  if (!isAbsoluteFilePath(filePath) || isLibraryStackFrame(stackLine)) {
     return undefined;
   }
 
@@ -84,9 +85,7 @@ function getCallerFilePathFromStackLine(stackLine: string): string | undefined {
 function getCallerFilePath(): string {
   const fallbackCallerFilePath = path.join(process.cwd(), DEFAULT_CALLER_FILE_NAME);
   const stackLines = new Error('functional-error').stack?.split('\n') ?? [];
-  const stackCallerFilePath = stackLines
-    .map((stackLine) => getCallerFilePathFromStackLine(stackLine))
-    .find(Boolean);
+  const stackCallerFilePath = stackLines.map((stackLine) => getCallerFilePathFromStackLine(stackLine)).find(Boolean);
 
   return stackCallerFilePath || fallbackCallerFilePath;
 }
