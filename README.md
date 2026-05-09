@@ -105,7 +105,7 @@ directoryImport('./sample-directory', (moduleName, modulePath, moduleData) => {
 
 | Property              | Type    | Description                                                     |
 | --------------------- | ------- | --------------------------------------------------------------- |
-| includeSubdirectories | Boolean | If true, the module will import files from subdirectories       |
+| includeSubdirectories | Boolean | If true, the module will import files from subdirectories. Symbolic-link directories are skipped to avoid recursive loops and escapes |
 | targetDirectoryPath   | String  | The path to the directory from which modules are to be imported |
 | importPattern         | RegExp  | RegExp pattern to filter files                                  |
 | importMode            | String  | The import mode. Can be 'sync' or 'async'                       |
@@ -335,6 +335,12 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 ---
 
 ## Change Log
+
+### Unreleased
+
+#### Fixed
+- Default directory detection now falls back to the current working directory instead of the filesystem root when the caller stack is unavailable.
+- Recursive imports now skip symbolic-link directories to avoid loops and unexpected traversal outside the target directory.
 
 ### [3.3.2] - 2024-12-25
 
