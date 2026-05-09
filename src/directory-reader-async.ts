@@ -24,7 +24,7 @@ export default async function readDirectoryAsync(
 
       const relativeItemPath = path.join(`${targetDirectoryPath}`, `${itemPath}`);
 
-      const stat = await fs.stat(relativeItemPath);
+      const stat = await fs.lstat(relativeItemPath);
 
       if (stat.isDirectory() && options.includeSubdirectories) {
         const files = await readDirectoryAsync(options, relativeItemPath);
