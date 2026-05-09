@@ -30,7 +30,10 @@ function isAbsoluteFilePath(filePath: string): boolean {
  * @returns {boolean} Whether the stack frame points to this library.
  */
 function isLibraryStackFrame(stackLine: string): boolean {
-  const stackFrameName = stackLine.match(/^\s*at\s+([^\s(]+)/)?.[1]?.split('.').at(-1);
+  const stackFrameName = stackLine
+    .match(/^\s*at\s+([^\s(]+)/)?.[1]
+    ?.split('.')
+    .at(-1);
 
   return stackFrameName ? LIBRARY_STACK_FRAME_NAMES.has(stackFrameName) : false;
 }
