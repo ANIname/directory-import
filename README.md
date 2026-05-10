@@ -336,6 +336,12 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 
 ## Change Log
 
+### Unreleased
+
+#### Fixed
+- Prevent default imports from falling back to the filesystem root when the caller stack cannot be parsed.
+- Skip symlink directories during recursive traversal to avoid recursive symlink crashes.
+
 ### [3.3.2] - 2024-12-25
 
 #### Added
