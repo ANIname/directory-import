@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 import { directoryImport } from '../src';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
@@ -6,7 +8,6 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -64,6 +65,31 @@ test('Import modules from the specified directory (relative path) synchronously'
   const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY);
 
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
+});
+
+test('Resolve a relative directory from the current working directory when the caller file path is unavailable', () => {
+  const originalErrorConstructor = global.Error;
+  const errorSpy = jest.spyOn(global, 'Error').mockImplementationOnce((message?: string) => {
+    const error = new originalErrorConstructor(message);
+
+    error.stack = [
+      'Error: functional-error',
+      '    at getDefaultOptions (/workspace/src/prepare-private-options.ts:22:5)',
+      '    at preparePrivateOptions (/workspace/src/prepare-private-options.ts:41:24)',
+      '    at directoryImport (/workspace/src/index.ts:81:19)',
+      '    at [eval]:1:1',
+    ].join('\n');
+
+    return error;
+  });
+
+  try {
+    const result = directoryImport('./sample-directory');
+
+    expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
+  } finally {
+    errorSpy.mockRestore();
+  }
 });
 
 test('Import modules from the specified directory (absolute path) synchronously', () => {
