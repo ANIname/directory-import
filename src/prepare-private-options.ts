@@ -8,24 +8,30 @@ import {
 } from './types.d';
 
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
+  const currentWorkingDirectory = process.cwd();
+  const defaultCallerFilePath = path.join(currentWorkingDirectory, 'index.js');
   const options = {
     includeSubdirectories: true,
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: path.resolve('/'),
-    callerDirectoryPath: path.resolve('/'),
-    targetDirectoryPath: path.resolve('/'),
+    callerFilePath: defaultCallerFilePath,
+    callerDirectoryPath: currentWorkingDirectory,
+    targetDirectoryPath: currentWorkingDirectory,
     forceReload: false,
   };
 
-  options.callerFilePath =
-    (new Error('functional-error').stack as string)
-      .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
+  const callerFilePath = new Error('functional-error').stack
+    ?.split('\n')[4]
+    // eslint-disable-next-line security/detect-unsafe-regex
+    ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0];
 
-  options.callerDirectoryPath = path.dirname(options.callerFilePath);
+  if (!callerFilePath) {
+    return options;
+  }
+
+  options.callerFilePath = callerFilePath;
+  options.callerDirectoryPath = path.dirname(callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
   return options;
 };
