@@ -1,3 +1,7 @@
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { directoryImport } from '../src';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
@@ -6,7 +10,31 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
+
+interface TemporaryImportFixture {
+  rootDirectoryPath: string;
+  targetDirectoryPath: string;
+}
+
+/**
+ * Create an import fixture with valid modules and symbolic links that must not be followed.
+ * @returns {TemporaryImportFixture} Paths for the temporary import fixture.
+ */
+function createTemporaryImportFixture(): TemporaryImportFixture {
+  const rootDirectoryPath = mkdtempSync(join(tmpdir(), 'directory-import-'));
+  const targetDirectoryPath = join(rootDirectoryPath, 'modules');
+  const outsideDirectoryPath = join(rootDirectoryPath, 'outside');
+  const outsideModulePath = join(outsideDirectoryPath, 'outside.js');
+
+  mkdirSync(targetDirectoryPath);
+  mkdirSync(outsideDirectoryPath);
+  writeFileSync(join(targetDirectoryPath, 'safe.js'), 'module.exports = { safe: true };\n');
+  writeFileSync(outsideModulePath, 'module.exports = { outside: true };\n');
+  symlinkSync(outsideModulePath, join(targetDirectoryPath, 'linked-outside.js'));
+  symlinkSync(targetDirectoryPath, join(targetDirectoryPath, 'recursive-loop'), 'dir');
+
+  return { rootDirectoryPath, targetDirectoryPath };
+}
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -223,13 +251,54 @@ test('Import modules with specified options and call the provided callback for e
   expect(callbackResults).toEqual(DEFAULT_EXPECTED_CALLBACK_RESULTS_FROM_SAMPLE_DIRECTORY);
 });
 
+test('Import modules from current working directory when caller stack path cannot be resolved', () => {
+  const previousStackTraceLimit = Error.stackTraceLimit;
+  Error.stackTraceLimit = 0;
+
+  try {
+    const result = directoryImport('./sample-directory');
+
+    expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
+  } finally {
+    Error.stackTraceLimit = previousStackTraceLimit;
+  }
+});
+
+test('Import modules synchronously without following symbolic links', () => {
+  const { rootDirectoryPath, targetDirectoryPath } = createTemporaryImportFixture();
+
+  try {
+    const result = directoryImport(targetDirectoryPath);
+
+    expect(result).toEqual({ '/safe.js': { safe: true } });
+  } finally {
+    rmSync(rootDirectoryPath, { force: true, recursive: true });
+  }
+});
+
+test('Import modules asynchronously without following symbolic links', async () => {
+  const { rootDirectoryPath, targetDirectoryPath } = createTemporaryImportFixture();
+
+  try {
+    const result = directoryImport(targetDirectoryPath, 'async');
+
+    expect(result).toBeInstanceOf(Promise);
+    expect(await result).toEqual({ '/safe.js': { safe: true } });
+  } finally {
+    rmSync(rootDirectoryPath, { force: true, recursive: true });
+  }
+});
+
 test('Import modules with cache', () => {
-  const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY)
+  const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY);
 
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
 
   // change the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
+  writeFileSync(
+    `${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`,
+    "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n",
+  );
 
   // re-import the modules
   const result2 = directoryImport({
@@ -239,16 +308,22 @@ test('Import modules with cache', () => {
 
   expect(result2).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
   // revert the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+  writeFileSync(
+    `${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`,
+    "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n",
+  );
 });
 
 test('Import modules without cache', () => {
-  const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY)
+  const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY);
 
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
 
   // change the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
+  writeFileSync(
+    `${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`,
+    "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n",
+  );
 
   jest.resetModules();
 
@@ -261,5 +336,8 @@ test('Import modules without cache', () => {
   expect(result2['/sample-file-2.js']).toEqual({ testData: 'Hello World Changed!' });
 
   // revert the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+  writeFileSync(
+    `${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`,
+    "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n",
+  );
 });
