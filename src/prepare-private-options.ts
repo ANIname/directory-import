@@ -14,10 +14,9 @@ import {
  * @returns {string | undefined} The caller file path when it can be parsed safely.
  */
 function extractCallerFilePath(stackTraceLine: string | undefined): string | undefined {
-  const callerFilePath =
-    stackTraceLine
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0];
+  const callerFilePath = stackTraceLine
+    // eslint-disable-next-line security/detect-unsafe-regex
+    ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0];
 
   if (!callerFilePath || !existsSync(callerFilePath)) {
     return undefined;
@@ -41,8 +40,7 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
   };
 
   options.callerFilePath =
-    extractCallerFilePath((new Error('functional-error').stack as string).split('\n')[4]) ||
-    fallbackCallerFilePath;
+    extractCallerFilePath((new Error('functional-error').stack as string).split('\n')[4]) || fallbackCallerFilePath;
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
