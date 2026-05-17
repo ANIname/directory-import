@@ -78,8 +78,10 @@ function importModule(
   const relativeModulePath = filePath.slice(options.targetDirectoryPath.length);
 
   if (options.forceReload) {
+    const resolvedModulePath = require.resolve(filePath);
+
     // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
-    delete require.cache[filePath];
+    delete require.cache[resolvedModulePath];
   }
 
   // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
