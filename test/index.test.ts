@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -280,35 +281,44 @@ test('Import modules without cache', () => {
 });
 
 test('Import modules without cache through a symlinked directory', () => {
-  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
-  const realDirectoryPath = path.join(temporaryDirectoryPath, 'real');
-  const symlinkDirectoryPath = path.join(temporaryDirectoryPath, 'linked');
-  const moduleFilePath = path.join(realDirectoryPath, 'sample-module.js');
+  const builtPackagePath = path.resolve(__dirname, '../dist');
+  const script = `
+    const fs = require('node:fs');
+    const os = require('node:os');
+    const path = require('node:path');
+    const { directoryImport } = require(${JSON.stringify(builtPackagePath)});
 
-  try {
-    fs.mkdirSync(realDirectoryPath);
-    fs.writeFileSync(moduleFilePath, "module.exports = { testData: 'Initial value' };\n");
-    fs.symlinkSync(realDirectoryPath, symlinkDirectoryPath, 'dir');
+    const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-'));
+    const realDirectoryPath = path.join(temporaryDirectoryPath, 'real');
+    const symlinkDirectoryPath = path.join(temporaryDirectoryPath, 'linked');
+    const moduleFilePath = path.join(realDirectoryPath, 'sample-module.js');
 
-    const initialResult = directoryImport(symlinkDirectoryPath);
+    try {
+      fs.mkdirSync(realDirectoryPath);
+      fs.writeFileSync(moduleFilePath, "module.exports = { testData: 'Initial value' };\\n");
+      fs.symlinkSync(realDirectoryPath, symlinkDirectoryPath, 'dir');
 
-    expect(initialResult).toEqual({ '/sample-module.js': { testData: 'Initial value' } });
+      directoryImport(symlinkDirectoryPath);
 
-    fs.writeFileSync(moduleFilePath, "module.exports = { testData: 'Changed value' };\n");
+      fs.writeFileSync(moduleFilePath, "module.exports = { testData: 'Changed value' };\\n");
 
-    const reloadedResult = directoryImport({
-      targetDirectoryPath: symlinkDirectoryPath,
-      forceReload: true,
-    });
+      const reloadedResult = directoryImport({
+        targetDirectoryPath: symlinkDirectoryPath,
+        forceReload: true,
+      });
 
-    expect(reloadedResult).toEqual({ '/sample-module.js': { testData: 'Changed value' } });
-  } finally {
-    if (fs.existsSync(moduleFilePath)) {
-      const resolvedModuleFilePath = require.resolve(moduleFilePath);
+      process.stdout.write(JSON.stringify(reloadedResult));
+    } finally {
+      if (fs.existsSync(moduleFilePath)) {
+        const resolvedModuleFilePath = require.resolve(moduleFilePath);
 
-      delete require.cache[resolvedModuleFilePath];
+        delete require.cache[resolvedModuleFilePath];
+      }
+
+      fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
     }
+  `;
+  const reloadedResult = JSON.parse(execFileSync(process.execPath, ['-e', script], { encoding: 'utf8' })) as unknown;
 
-    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
-  }
+  expect(reloadedResult).toEqual({ '/sample-module.js': { testData: 'Changed value' } });
 });
