@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import {
@@ -7,23 +8,39 @@ import {
   ImportModulesMode,
 } from './types.d';
 
+/**
+ * Extract the caller file path from a stack trace line.
+ * @param {string | undefined} stackTraceLine - The stack trace line to parse.
+ * @returns {string | undefined} The caller file path when it can be parsed safely.
+ */
+function extractCallerFilePath(stackTraceLine: string | undefined): string | undefined {
+  const callerFilePath = stackTraceLine
+    // eslint-disable-next-line security/detect-unsafe-regex
+    ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0];
+
+  if (!callerFilePath || !existsSync(callerFilePath)) {
+    return undefined;
+  }
+
+  return callerFilePath;
+}
+
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
+  const currentWorkingDirectoryPath = process.cwd();
+  const fallbackCallerFilePath = path.join(currentWorkingDirectoryPath, 'index.js');
   const options = {
     includeSubdirectories: true,
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: path.resolve('/'),
-    callerDirectoryPath: path.resolve('/'),
-    targetDirectoryPath: path.resolve('/'),
+    callerFilePath: fallbackCallerFilePath,
+    callerDirectoryPath: currentWorkingDirectoryPath,
+    targetDirectoryPath: currentWorkingDirectoryPath,
     forceReload: false,
   };
+  const callerStackTraceLine = new Error('functional-error').stack?.split('\n')[4];
 
-  options.callerFilePath =
-    (new Error('functional-error').stack as string)
-      .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
+  options.callerFilePath = extractCallerFilePath(callerStackTraceLine) || fallbackCallerFilePath;
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
