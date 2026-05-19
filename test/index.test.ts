@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -284,37 +285,40 @@ test('Import modules without cache refreshes dependencies before importing modul
   const dependencyDirectoryPath = join(temporaryDirectoryPath, 'nested');
   const dependencyFilePath = join(dependencyDirectoryPath, 'dependency.js');
   const importerFilePath = join(temporaryDirectoryPath, 'importer.js');
-  const temporaryFilePaths = [importerFilePath, dependencyFilePath];
 
   try {
     mkdirSync(dependencyDirectoryPath);
     writeFileSync(dependencyFilePath, "module.exports = { value: 'before' };\n");
     writeFileSync(importerFilePath, "module.exports = require('./nested/dependency');\n");
 
-    const firstResult = directoryImport({
-      targetDirectoryPath: temporaryDirectoryPath,
-      forceReload: true,
+    const distDirectoryImportPath = join(__dirname, '../dist');
+    const scenarioScript = `
+const { writeFileSync } = require('node:fs');
+const { directoryImport } = require(${JSON.stringify(distDirectoryImportPath)});
+const targetDirectoryPath = ${JSON.stringify(temporaryDirectoryPath)};
+const dependencyFilePath = ${JSON.stringify(dependencyFilePath)};
+
+const firstResult = directoryImport({ targetDirectoryPath, forceReload: true });
+
+writeFileSync(dependencyFilePath, "module.exports = { value: 'after' };\\n");
+
+const secondResult = directoryImport({ targetDirectoryPath, forceReload: true });
+
+process.stdout.write(JSON.stringify({
+  first: firstResult['/importer.js'],
+  second: secondResult['/importer.js'],
+}));
+`;
+    const scenarioResult = JSON.parse(execFileSync(process.execPath, ['-e', scenarioScript], { encoding: 'utf8' })) as {
+      first: unknown;
+      second: unknown;
+    };
+
+    expect(scenarioResult).toEqual({
+      first: { value: 'before' },
+      second: { value: 'after' },
     });
-
-    expect(firstResult['/importer.js']).toEqual({ value: 'before' });
-
-    writeFileSync(dependencyFilePath, "module.exports = { value: 'after' };\n");
-
-    const secondResult = directoryImport({
-      targetDirectoryPath: temporaryDirectoryPath,
-      forceReload: true,
-    });
-
-    expect(secondResult['/importer.js']).toEqual({ value: 'after' });
   } finally {
-    for (const temporaryFilePath of temporaryFilePaths) {
-      try {
-        delete require.cache[require.resolve(temporaryFilePath)];
-      } catch {
-        // The file may not have been resolved if setup failed before importing it.
-      }
-    }
-
     rmSync(temporaryDirectoryPath, { force: true, recursive: true });
   }
 });
