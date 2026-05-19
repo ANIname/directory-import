@@ -84,8 +84,10 @@ function getImportableFilePaths(filesPaths: string[], options: ImportedModulesPr
  */
 function deleteModulesFromRequireCache(filePaths: string[]): void {
   for (const filePath of filePaths) {
+    // eslint-disable-next-line unicorn/prefer-module
     const resolvedFilePath = require.resolve(filePath);
 
+    // eslint-disable-next-line unicorn/prefer-module
     delete require.cache[resolvedFilePath];
   }
 }
