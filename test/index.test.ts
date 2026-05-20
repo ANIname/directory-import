@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { directoryImport } from '../src';
@@ -280,6 +280,14 @@ test('Import modules without cache', () => {
 });
 
 test('Import modules without cache refreshes imported dependencies before parent modules', () => {
+  const script = `
+const assert = require('node:assert/strict');
+const { mkdirSync, mkdtempSync, rmSync, writeFileSync } = require('node:fs');
+const { tmpdir } = require('node:os');
+const path = require('node:path');
+const { directoryImport } = require('./dist');
+
+(() => {
   const temporaryDirectoryPath = mkdtempSync(path.join(tmpdir(), 'directory-import-force-reload-'));
   const nestedDirectoryPath = path.join(temporaryDirectoryPath, 'nested');
   const parentFilePath = path.join(temporaryDirectoryPath, 'parent.js');
@@ -287,29 +295,31 @@ test('Import modules without cache refreshes imported dependencies before parent
 
   try {
     mkdirSync(nestedDirectoryPath);
-    writeFileSync(parentFilePath, "module.exports = require('./nested/dependency');\n");
-    writeFileSync(dependencyFilePath, "module.exports = { testData: 'Original dependency data' };\n");
+    writeFileSync(parentFilePath, "module.exports = require('./nested/dependency');\\n");
+    writeFileSync(dependencyFilePath, "module.exports = { testData: 'Original dependency data' };\\n");
 
     const result = directoryImport({
       targetDirectoryPath: temporaryDirectoryPath,
       forceReload: true,
     });
 
-    expect(result['/parent.js']).toEqual({ testData: 'Original dependency data' });
-    expect(result['/nested/dependency.js']).toEqual({ testData: 'Original dependency data' });
+    assert.deepStrictEqual(result['/parent.js'], { testData: 'Original dependency data' });
+    assert.deepStrictEqual(result['/nested/dependency.js'], { testData: 'Original dependency data' });
 
-    writeFileSync(dependencyFilePath, "module.exports = { testData: 'Changed dependency data' };\n");
+    writeFileSync(dependencyFilePath, "module.exports = { testData: 'Changed dependency data' };\\n");
 
     const reloadedResult = directoryImport({
       targetDirectoryPath: temporaryDirectoryPath,
       forceReload: true,
     });
 
-    expect(reloadedResult['/parent.js']).toEqual({ testData: 'Changed dependency data' });
-    expect(reloadedResult['/nested/dependency.js']).toEqual({ testData: 'Changed dependency data' });
+    assert.deepStrictEqual(reloadedResult['/parent.js'], { testData: 'Changed dependency data' });
+    assert.deepStrictEqual(reloadedResult['/nested/dependency.js'], { testData: 'Changed dependency data' });
   } finally {
-    if (existsSync(parentFilePath)) delete require.cache[require.resolve(parentFilePath)];
-    if (existsSync(dependencyFilePath)) delete require.cache[require.resolve(dependencyFilePath)];
     rmSync(temporaryDirectoryPath, { recursive: true, force: true });
   }
+})();
+`;
+
+  execFileSync(process.execPath, ['-e', script], { cwd: path.resolve(__dirname, '..') });
 });
