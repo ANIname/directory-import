@@ -1,3 +1,7 @@
+import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import path from 'node:path';
+
 import { directoryImport } from '../src';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
@@ -6,7 +10,6 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -229,7 +232,10 @@ test('Import modules with cache', () => {
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
 
   // change the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
+  writeFileSync(
+    `${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`,
+    "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n",
+  );
 
   // re-import the modules
   const result2 = directoryImport({
@@ -239,7 +245,10 @@ test('Import modules with cache', () => {
 
   expect(result2).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
   // revert the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+  writeFileSync(
+    `${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`,
+    "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n",
+  );
 });
 
 test('Import modules without cache', () => {
@@ -248,7 +257,10 @@ test('Import modules without cache', () => {
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
 
   // change the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
+  writeFileSync(
+    `${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`,
+    "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n",
+  );
 
   jest.resetModules();
 
@@ -261,5 +273,53 @@ test('Import modules without cache', () => {
   expect(result2['/sample-file-2.js']).toEqual({ testData: 'Hello World Changed!' });
 
   // revert the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+  writeFileSync(
+    `${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`,
+    "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n",
+  );
+});
+
+test('Import modules without cache refreshes imported dependencies before parent modules', () => {
+  const script = `
+const assert = require('node:assert/strict');
+const { mkdirSync, mkdtempSync, rmSync, writeFileSync } = require('node:fs');
+const { tmpdir } = require('node:os');
+const path = require('node:path');
+const { directoryImport } = require('./dist');
+
+(() => {
+  const temporaryDirectoryPath = mkdtempSync(path.join(tmpdir(), 'directory-import-force-reload-'));
+  const nestedDirectoryPath = path.join(temporaryDirectoryPath, 'nested');
+  const parentFilePath = path.join(temporaryDirectoryPath, 'parent.js');
+  const dependencyFilePath = path.join(nestedDirectoryPath, 'dependency.js');
+
+  try {
+    mkdirSync(nestedDirectoryPath);
+    writeFileSync(parentFilePath, "module.exports = require('./nested/dependency');\\n");
+    writeFileSync(dependencyFilePath, "module.exports = { testData: 'Original dependency data' };\\n");
+
+    const result = directoryImport({
+      targetDirectoryPath: temporaryDirectoryPath,
+      forceReload: true,
+    });
+
+    assert.deepStrictEqual(result['/parent.js'], { testData: 'Original dependency data' });
+    assert.deepStrictEqual(result['/nested/dependency.js'], { testData: 'Original dependency data' });
+
+    writeFileSync(dependencyFilePath, "module.exports = { testData: 'Changed dependency data' };\\n");
+
+    const reloadedResult = directoryImport({
+      targetDirectoryPath: temporaryDirectoryPath,
+      forceReload: true,
+    });
+
+    assert.deepStrictEqual(reloadedResult['/parent.js'], { testData: 'Changed dependency data' });
+    assert.deepStrictEqual(reloadedResult['/nested/dependency.js'], { testData: 'Changed dependency data' });
+  } finally {
+    rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
+})();
+`;
+
+  execFileSync(process.execPath, ['-e', script], { cwd: path.resolve(__dirname, '..') });
 });
