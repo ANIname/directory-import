@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs';
 import path from 'node:path';
 
 import readDirectoryAsync from './directory-reader-async';
@@ -77,13 +78,16 @@ function importModule(
 
   const relativeModulePath = filePath.slice(options.targetDirectoryPath.length);
 
-  // Node caches symlinked modules by their resolved real path, not by the directory entry path.
+  // Node may cache symlinked modules by either their symlink path or real path, depending on runtime flags.
   // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
   const resolvedModulePath = require.resolve(filePath) as string;
+  const cacheModulePaths = new Set([resolvedModulePath, realpathSync.native(resolvedModulePath)]);
 
   if (options.forceReload) {
-    // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
-    delete require.cache[resolvedModulePath];
+    for (const cacheModulePath of cacheModulePaths) {
+      // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
+      delete require.cache[cacheModulePath];
+    }
   }
 
   // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
