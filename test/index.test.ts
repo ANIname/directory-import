@@ -1,3 +1,7 @@
+import { execFileSync } from 'node:child_process';
+import { readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+
 import { directoryImport } from '../src';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
@@ -6,7 +10,6 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -224,42 +227,86 @@ test('Import modules with specified options and call the provided callback for e
 });
 
 test('Import modules with cache', () => {
-  const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY)
+  const sampleModulePath = path.join(DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY, 'sample-file-2.js');
+  const originalSampleModuleContent = readFileSync(sampleModulePath, 'utf8');
+  const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY);
 
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
 
-  // change the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
+  try {
+    writeFileSync(
+      sampleModulePath,
+      "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n",
+    );
 
-  // re-import the modules
-  const result2 = directoryImport({
-    targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
-    forceReload: false,
-  });
+    const cachedResult = directoryImport({
+      targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
+      forceReload: false,
+    });
 
-  expect(result2).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
-  // revert the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+    expect(cachedResult).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
+  } finally {
+    writeFileSync(sampleModulePath, originalSampleModuleContent);
+  }
 });
 
-test('Import modules without cache', () => {
-  const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY)
+test('Import modules without cache in Node runtime', () => {
+  const directoryImportPackagePath = path.resolve(__dirname, '../dist');
+  const forceReloadScript = `
+    const fs = require('node:fs');
+    const os = require('node:os');
+    const path = require('node:path');
+    const { directoryImport } = require(${JSON.stringify(directoryImportPackagePath)});
+    const temporaryRootDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-force-reload-'));
 
-  expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
+    try {
+      const regularDirectory = path.join(temporaryRootDirectory, 'regular');
+      fs.mkdirSync(regularDirectory);
+      const regularModulePath = path.join(regularDirectory, 'module.js');
 
-  // change the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
+      fs.writeFileSync(regularModulePath, "module.exports = { value: 'first' };\\n");
+      directoryImport({ targetDirectoryPath: regularDirectory });
+      fs.writeFileSync(regularModulePath, "module.exports = { value: 'second' };\\n");
 
-  jest.resetModules();
+      const cachedRegularResult = directoryImport({
+        targetDirectoryPath: regularDirectory,
+        forceReload: false,
+      });
+      const reloadedRegularResult = directoryImport({
+        targetDirectoryPath: regularDirectory,
+        forceReload: true,
+      });
 
-  // re-import the modules
-  const result2 = directoryImport({
-    targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
-    forceReload: true,
+      const realDirectory = path.join(temporaryRootDirectory, 'real');
+      const importDirectory = path.join(temporaryRootDirectory, 'import');
+      fs.mkdirSync(realDirectory);
+      fs.mkdirSync(importDirectory);
+      const realModulePath = path.join(realDirectory, 'module.js');
+      const symlinkModulePath = path.join(importDirectory, 'module.js');
+
+      fs.writeFileSync(realModulePath, "module.exports = { value: 'first' };\\n");
+      fs.symlinkSync(realModulePath, symlinkModulePath);
+      directoryImport({ targetDirectoryPath: importDirectory });
+      fs.writeFileSync(realModulePath, "module.exports = { value: 'second' };\\n");
+
+      const reloadedSymlinkResult = directoryImport({
+        targetDirectoryPath: importDirectory,
+        forceReload: true,
+      });
+
+      console.log(JSON.stringify({
+        cachedRegularValue: cachedRegularResult['/module.js'].value,
+        reloadedRegularValue: reloadedRegularResult['/module.js'].value,
+        reloadedSymlinkValue: reloadedSymlinkResult['/module.js'].value,
+      }));
+    } finally {
+      fs.rmSync(temporaryRootDirectory, { force: true, recursive: true });
+    }
+  `;
+
+  expect(JSON.parse(execFileSync(process.execPath, ['-e', forceReloadScript], { encoding: 'utf8' }))).toEqual({
+    cachedRegularValue: 'first',
+    reloadedRegularValue: 'second',
+    reloadedSymlinkValue: 'second',
   });
-
-  expect(result2['/sample-file-2.js']).toEqual({ testData: 'Hello World Changed!' });
-
-  // revert the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
 });
