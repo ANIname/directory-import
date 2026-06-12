@@ -77,13 +77,17 @@ function importModule(
 
   const relativeModulePath = filePath.slice(options.targetDirectoryPath.length);
 
+  // Node caches symlinked modules by their resolved real path, not by the directory entry path.
+  // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
+  const resolvedModulePath = require.resolve(filePath) as string;
+
   if (options.forceReload) {
     // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
-    delete require.cache[filePath];
+    delete require.cache[resolvedModulePath];
   }
 
   // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
-  const importedModule = require(filePath) as unknown;
+  const importedModule = require(resolvedModulePath) as unknown;
 
   modules[relativeModulePath] = importedModule;
 
