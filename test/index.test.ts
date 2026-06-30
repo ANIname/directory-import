@@ -193,6 +193,25 @@ test('Import modules with specified options with import pattern', async () => {
   expect(await result).toEqual({ '/sample-file-3.json': { serverHost: '0.0.0.0', serverPort: 3000 } });
 });
 
+test('Import modules with specified options with stateful import pattern', () => {
+  const expectedResult = {
+    '/sample-file-1.ts': DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY['/sample-file-1.ts'],
+    '/sample-file-2.js': DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY['/sample-file-2.js'],
+    '/sample-file-3.json': DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY['/sample-file-3.json'],
+  };
+  const statefulImportPatterns = [/.*\.(js|ts|json)$/g, /.*\.(js|ts|json)$/y];
+
+  for (const importPattern of statefulImportPatterns) {
+    const options: ImportedModulesPublicOptions = {
+      targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
+      includeSubdirectories: false,
+      importPattern,
+    };
+
+    expect(directoryImport(options)).toEqual(expectedResult);
+  }
+});
+
 test('Import modules with specified options with import limit', () => {
   const options: ImportedModulesPublicOptions = {
     targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
