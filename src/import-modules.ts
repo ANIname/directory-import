@@ -105,9 +105,12 @@ function isFilePathMatchedByPattern(filePath: string, importPattern: RegExp): bo
     return importPattern.test(filePath);
   }
 
-  const statelessImportPattern = new RegExp(importPattern.source, importPattern.flags.replaceAll(/[gy]/g, ''));
+  const previousLastIndex = importPattern.lastIndex;
+  importPattern.lastIndex = 0;
+  const isMatched = importPattern.test(filePath);
+  importPattern.lastIndex = previousLastIndex;
 
-  return statelessImportPattern.test(filePath);
+  return isMatched;
 }
 
 /**
