@@ -69,7 +69,7 @@ function importModule(
   const { name: fileName, ext: fileExtension } = path.parse(filePath);
   const isValidModuleExtension = VALID_IMPORT_EXTENSIONS.has(fileExtension);
   const isDeclarationFile = filePath.endsWith('.d.ts');
-  const isValidFilePath = options.importPattern ? options.importPattern.test(filePath) : true;
+  const isValidFilePath = options.importPattern ? isFilePathMatchedByPattern(filePath, options.importPattern) : true;
 
   if (!isValidModuleExtension) return false;
   if (!isValidFilePath) return false;
@@ -92,6 +92,22 @@ function importModule(
   }
 
   return true;
+}
+
+/**
+ * Check whether a file path matches a user-provided import pattern.
+ * @param {string} filePath - The file path to test.
+ * @param {RegExp} importPattern - The pattern used to filter importable files.
+ * @returns {boolean} Whether the file path matches the import pattern.
+ */
+function isFilePathMatchedByPattern(filePath: string, importPattern: RegExp): boolean {
+  if (!importPattern.global && !importPattern.sticky) {
+    return importPattern.test(filePath);
+  }
+
+  const statelessImportPattern = new RegExp(importPattern.source, importPattern.flags.replaceAll(/[gy]/g, ''));
+
+  return statelessImportPattern.test(filePath);
 }
 
 /**
