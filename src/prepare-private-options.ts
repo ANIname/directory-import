@@ -1,4 +1,4 @@
-import path from 'node:path';
+import { dirname, resolve } from 'node:path';
 
 import {
   ImportedModulesPrivateOptions,
@@ -13,9 +13,9 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
     importMode: 'sync' as ImportModulesMode,
     importPattern: /.*/,
     limit: Number.POSITIVE_INFINITY,
-    callerFilePath: path.resolve('/'),
-    callerDirectoryPath: path.resolve('/'),
-    targetDirectoryPath: path.resolve('/'),
+    callerFilePath: resolve('/'),
+    callerDirectoryPath: resolve('/'),
+    targetDirectoryPath: resolve('/'),
     forceReload: false,
   };
 
@@ -25,7 +25,7 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
       // eslint-disable-next-line security/detect-unsafe-regex
       ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
 
-  options.callerDirectoryPath = path.dirname(options.callerFilePath);
+  options.callerDirectoryPath = dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
   return options;
 };
@@ -51,14 +51,28 @@ export default function preparePrivateOptions(
 
   // ** If user provided an object as first argument,
   // ** it means that he wants to set custom options
-  // ** use it to oweverwrite the default options
+  // ** use public options to overwrite the default options
   else if (typeof arguments_[0] === 'object') {
+    const publicOptions = (arguments_[0] || {}) as ImportedModulesPublicOptions;
+    const {
+      forceReload = options.forceReload,
+      importMode = options.importMode,
+      importPattern = options.importPattern,
+      includeSubdirectories = options.includeSubdirectories,
+      limit = options.limit,
+      targetDirectoryPath = options.targetDirectoryPath,
+    } = publicOptions;
     const result = {
-      ...getDefaultOptions(),
-      ...(arguments_[0] as ImportedModulesPublicOptions),
+      ...options,
+      forceReload,
+      importMode,
+      importPattern,
+      includeSubdirectories,
+      limit,
+      targetDirectoryPath,
     };
 
-    result.targetDirectoryPath = path.resolve(result.callerDirectoryPath, result.targetDirectoryPath);
+    result.targetDirectoryPath = resolve(result.callerDirectoryPath, result.targetDirectoryPath);
     result.callback = typeof arguments_[1] === 'function' ? arguments_[1] : undefined;
 
     return result;
@@ -68,7 +82,7 @@ export default function preparePrivateOptions(
   // ** it means that he wants to set the target directory path as first argument
   // ** use it to oweverwrite the default options
   else if (typeof arguments_[0] === 'string') {
-    options.targetDirectoryPath = path.resolve(options.callerDirectoryPath, arguments_[0]);
+    options.targetDirectoryPath = resolve(options.callerDirectoryPath, arguments_[0]);
   }
 
   // ** If user provided a function
