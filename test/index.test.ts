@@ -6,7 +6,9 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -223,13 +225,43 @@ test('Import modules with specified options and call the provided callback for e
   expect(callbackResults).toEqual(DEFAULT_EXPECTED_CALLBACK_RESULTS_FROM_SAMPLE_DIRECTORY);
 });
 
+test('Import modules from the default directory skips the currently loading caller module', () => {
+  const temporaryDirectoryPath = mkdtempSync(join(tmpdir(), 'directory-import-caller-'));
+  const callerFilePath = join(temporaryDirectoryPath, 'caller.js');
+  const siblingFilePath = join(temporaryDirectoryPath, 'sibling.js');
+  const sourceEntryPath = resolve(__dirname, '../src');
+
+  writeFileSync(siblingFilePath, "module.exports = { ready: true };\n");
+  writeFileSync(
+    callerFilePath,
+    [
+      `const { directoryImport } = require(${JSON.stringify(sourceEntryPath)});`,
+      "exports.before = 'set-before';",
+      'exports.result = directoryImport();',
+      "exports.after = 'set-after';",
+      '',
+    ].join('\n'),
+  );
+
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, unicorn/prefer-module
+  const callerModule = require(callerFilePath) as { result: Record<string, unknown> };
+
+  expect(callerModule.result).toEqual({
+    '/sibling.js': { ready: true },
+  });
+  expect(() => JSON.stringify(callerModule.result)).not.toThrow();
+
+  delete require.cache[require.resolve(callerFilePath)];
+  delete require.cache[require.resolve(siblingFilePath)];
+});
+
 test('Import modules with cache', () => {
   const result = directoryImport(DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY)
 
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
 
   // change the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
+  writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
 
   // re-import the modules
   const result2 = directoryImport({
@@ -239,7 +271,7 @@ test('Import modules with cache', () => {
 
   expect(result2).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
   // revert the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+  writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
 });
 
 test('Import modules without cache', () => {
@@ -248,7 +280,7 @@ test('Import modules without cache', () => {
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
 
   // change the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
+  writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
 
   jest.resetModules();
 
@@ -261,5 +293,5 @@ test('Import modules without cache', () => {
   expect(result2['/sample-file-2.js']).toEqual({ testData: 'Hello World Changed!' });
 
   // revert the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+  writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
 });
