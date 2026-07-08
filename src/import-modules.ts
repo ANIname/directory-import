@@ -19,7 +19,9 @@ function isCurrentlyLoadingCallerModule(filePath: string, callerFilePath: string
     return false;
   }
 
+  // eslint-disable-next-line unicorn/prefer-module
   const resolvedFilePath = require.resolve(filePath);
+  // eslint-disable-next-line unicorn/prefer-module
   const cachedModule = require.cache[resolvedFilePath];
 
   return cachedModule?.loaded === false;
