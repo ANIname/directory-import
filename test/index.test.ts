@@ -208,6 +208,40 @@ test('Import modules with specified options with import limit', () => {
   expect(result).toEqual({ '/sample-file-3.json': { serverHost: '0.0.0.0', serverPort: 3000 } });
 });
 
+test('Do not import modules when sync import limit is zero', () => {
+  const callbackResults: unknown[] = [];
+  const result = directoryImport(
+    {
+      targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
+      limit: 0,
+    },
+    (moduleName, modulePath, moduleContent, index) => {
+      callbackResults.push({ moduleName, modulePath, moduleContent, index });
+    },
+  );
+
+  expect(result).toEqual({});
+  expect(callbackResults).toEqual([]);
+});
+
+test('Do not import modules when async import limit is zero', async () => {
+  const callbackResults: unknown[] = [];
+  const result = directoryImport(
+    {
+      targetDirectoryPath: DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
+      importMode: 'async',
+      limit: 0,
+    },
+    (moduleName, modulePath, moduleContent, index) => {
+      callbackResults.push({ moduleName, modulePath, moduleContent, index });
+    },
+  );
+
+  expect(result).toBeInstanceOf(Promise);
+  expect(await result).toEqual({});
+  expect(callbackResults).toEqual([]);
+});
+
 test('Import modules with specified options and call the provided callback for each imported module', () => {
   const options: ImportedModulesPublicOptions = {
     targetDirectoryPath: DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY,

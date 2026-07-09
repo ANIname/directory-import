@@ -21,10 +21,12 @@ function syncHandler(options: ImportedModulesPrivateOptions): ImportedModules {
   let index = 0;
 
   for (const filePath of filesPaths) {
+    if (index >= options.limit) break;
+
     const isModuleImported = importModule(filePath, index, options, modules);
 
     if (isModuleImported) index += 1;
-    if (index === options.limit) break;
+    if (index >= options.limit) break;
   }
 
   return modules;
@@ -43,10 +45,12 @@ async function asyncHandler(options: ImportedModulesPrivateOptions): Promise<Imp
   let index = 0;
 
   for (const filePath of filesPaths) {
+    if (index >= options.limit) break;
+
     const isModuleImported = importModule(filePath, index, options, modules);
 
     if (isModuleImported) index += 1;
-    if (index === options.limit) break;
+    if (index >= options.limit) break;
   }
 
   return modules;
