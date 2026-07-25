@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   ImportedModulesPrivateOptions,
@@ -6,6 +7,32 @@ import {
   ImportModulesInputArguments,
   ImportModulesMode,
 } from './types.d';
+
+/**
+ * Extract a filesystem caller path from a single stack trace line.
+ * Handles both normal paths and ESM `file://` URLs (including percent-encoded characters).
+ * @param {string | undefined} stackTraceLine - A single stack frame line from `Error.stack`.
+ * @returns {string | undefined} An absolute filesystem path when parsing succeeds.
+ */
+export function extractCallerFilePathFromStackLine(stackTraceLine: string | undefined): string | undefined {
+  if (!stackTraceLine) {
+    return undefined;
+  }
+
+  const fileUrlMatch = /(file:\/\/.+?):(\d+):(\d+)/.exec(stackTraceLine);
+  const fileUrl = fileUrlMatch?.[1];
+
+  if (fileUrl) {
+    try {
+      return fileURLToPath(fileUrl);
+    } catch {
+      // Fall through to the filesystem-path parser for malformed URLs.
+    }
+  }
+
+  // eslint-disable-next-line security/detect-unsafe-regex
+  return stackTraceLine.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0];
+}
 
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
   const options = {
@@ -20,10 +47,8 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
   };
 
   options.callerFilePath =
-    (new Error('functional-error').stack as string)
-      .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
+    extractCallerFilePathFromStackLine((new Error('functional-error').stack as string).split('\n')[4]) ||
+    options.callerFilePath;
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;

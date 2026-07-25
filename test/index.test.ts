@@ -1,4 +1,11 @@
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
 import { directoryImport } from '../src';
+import { extractCallerFilePathFromStackLine } from '../src/prepare-private-options';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
   DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY,
@@ -6,7 +13,6 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -229,7 +235,7 @@ test('Import modules with cache', () => {
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
 
   // change the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
+  writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
 
   // re-import the modules
   const result2 = directoryImport({
@@ -239,7 +245,7 @@ test('Import modules with cache', () => {
 
   expect(result2).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
   // revert the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+  writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
 });
 
 test('Import modules without cache', () => {
@@ -248,7 +254,7 @@ test('Import modules without cache', () => {
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
 
   // change the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
+  writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World Changed!' };\n");
 
   jest.resetModules();
 
@@ -261,5 +267,45 @@ test('Import modules without cache', () => {
   expect(result2['/sample-file-2.js']).toEqual({ testData: 'Hello World Changed!' });
 
   // revert the content of sample-file-2.js
-  fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+  writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('Extract caller paths from percent-encoded ESM file URL stack frames', () => {
+  const encodedStackLine = '    at file:///tmp/app%20with%20spaces/caller.mjs:7:1';
+  const windowsEncodedStackLine = '    at file:///C:/Users/demo%20user/project/caller.mjs:12:3';
+
+  expect(extractCallerFilePathFromStackLine(encodedStackLine)).toEqual('/tmp/app with spaces/caller.mjs');
+  expect(extractCallerFilePathFromStackLine(windowsEncodedStackLine)).toEqual(
+    resolve('/C:/Users/demo user/project/caller.mjs'),
+  );
+  expect(
+    extractCallerFilePathFromStackLine('    at Object.<anonymous> (/workspace/test/index.test.ts:12:18)'),
+  ).toEqual('/workspace/test/index.test.ts');
+});
+
+test('Import modules from an ESM caller located in a directory with spaces', () => {
+  const rootDirectoryPath = mkdtempSync(join(tmpdir(), 'directory-import-esm-'));
+  const callerDirectoryPath = join(rootDirectoryPath, 'app with spaces');
+  const modulesDirectoryPath = join(callerDirectoryPath, 'modules');
+  const callerFilePath = join(callerDirectoryPath, 'caller.mjs');
+  const builtPackageEntryPath = resolve(__dirname, '../dist/index.js');
+
+  mkdirSync(modulesDirectoryPath, { recursive: true });
+  writeFileSync(join(modulesDirectoryPath, 'sample.js'), 'module.exports = { ok: true };\n');
+  writeFileSync(
+    callerFilePath,
+    `
+import { directoryImport } from ${JSON.stringify(pathToFileURL(builtPackageEntryPath).href)};
+const result = directoryImport('./modules');
+console.log(JSON.stringify(result));
+`,
+  );
+
+  try {
+    const output = execFileSync(process.execPath, [callerFilePath], { encoding: 'utf8' });
+
+    expect(JSON.parse(output)).toEqual({ '/sample.js': { ok: true } });
+  } finally {
+    rmSync(rootDirectoryPath, { force: true, recursive: true });
+  }
 });
