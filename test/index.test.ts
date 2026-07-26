@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import { directoryImport } from '../src';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
@@ -6,7 +10,6 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -221,6 +224,24 @@ test('Import modules with specified options and call the provided callback for e
 
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
   expect(callbackResults).toEqual(DEFAULT_EXPECTED_CALLBACK_RESULTS_FROM_SAMPLE_DIRECTORY);
+});
+
+test('Import .cjs modules from a directory', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-cjs-'));
+
+  try {
+    fs.writeFileSync(path.join(temporaryDirectoryPath, 'plugin.cjs'), 'module.exports = { kind: "cjs" };\n');
+    fs.writeFileSync(path.join(temporaryDirectoryPath, 'plugin.js'), 'module.exports = { kind: "js" };\n');
+
+    const result = directoryImport(temporaryDirectoryPath);
+
+    expect(result).toEqual({
+      '/plugin.cjs': { kind: 'cjs' },
+      '/plugin.js': { kind: 'js' },
+    });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
 });
 
 test('Import modules with cache', () => {
