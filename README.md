@@ -336,6 +336,11 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 
 ## Change Log
 
+### Unreleased
+
+#### Fixed
+- `.cjs` modules are imported instead of being silently skipped.
+
 ### [3.3.2] - 2024-12-25
 
 #### Added
