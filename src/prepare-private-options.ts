@@ -20,15 +20,28 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
   };
 
   options.callerFilePath =
-    (new Error('functional-error').stack as string)
-      .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
+    extractCallerFilePathFromStack(new Error('functional-error').stack) || options.callerFilePath;
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
   return options;
 };
+
+/**
+ * Extract the caller file path from an Error stack value.
+ * `Error.prepareStackTrace` may make `Error.stack` a non-string (for example CallSite[]),
+ * so the value is validated before parsing.
+ * @param {unknown} stack - The value of `Error.stack` from a newly created Error.
+ * @returns {string | undefined} The caller file path when it can be parsed from a string stack.
+ */
+function extractCallerFilePathFromStack(stack: unknown): string | undefined {
+  if (typeof stack !== 'string') {
+    return undefined;
+  }
+
+  // eslint-disable-next-line security/detect-unsafe-regex
+  return stack.split('\n')[4]?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0];
+}
 
 /**
  * Prepare the options object from the provided arguments.
