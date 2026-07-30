@@ -336,6 +336,11 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 
 ## Change Log
 
+### Unreleased
+
+#### Fixed
+- Guard against non-string `Error.stack` values from custom `Error.prepareStackTrace` handlers so absolute directory imports no longer crash during caller path detection.
+
 ### [3.3.2] - 2024-12-25
 
 #### Added
