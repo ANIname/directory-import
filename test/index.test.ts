@@ -1,4 +1,10 @@
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import { directoryImport } from '../src';
+import { extractCallerFilePathFromStackLine } from '../src/prepare-private-options';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
   DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY,
@@ -6,7 +12,6 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -262,4 +267,48 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('Extract caller paths that contain colons before the line and column', () => {
+  expect(
+    extractCallerFilePathFromStackLine(
+      '    at Object.<anonymous> (/tmp/run:2026-08-02T08:02:33/caller.js:2:15)',
+    ),
+  ).toEqual('/tmp/run:2026-08-02T08:02:33/caller.js');
+
+  expect(
+    extractCallerFilePathFromStackLine('    at /tmp/run:2026-08-02T08:02:33/caller.js:34:30'),
+  ).toEqual('/tmp/run:2026-08-02T08:02:33/caller.js');
+
+  expect(
+    extractCallerFilePathFromStackLine(
+      '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)',
+    ),
+  ).toBeUndefined();
+});
+
+test('Import modules from a relative path when the caller directory contains colons', () => {
+  const temporaryRootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-colon-'));
+  const callerDirectoryPath = path.join(temporaryRootPath, 'run:2026-08-02T08:02:33');
+  const modulesDirectoryPath = path.join(callerDirectoryPath, 'modules');
+  const callerFilePath = path.join(callerDirectoryPath, 'caller.js');
+  const builtPackagePath = path.join(__dirname, '..', 'dist');
+
+  fs.mkdirSync(modulesDirectoryPath, { recursive: true });
+  fs.writeFileSync(path.join(modulesDirectoryPath, 'sample.js'), 'module.exports = { ok: true };\n');
+  fs.writeFileSync(
+    callerFilePath,
+    `
+      const { directoryImport } = require(${JSON.stringify(builtPackagePath)});
+      process.stdout.write(JSON.stringify(directoryImport('./modules')));
+    `,
+  );
+
+  try {
+    const importedModules = execFileSync(process.execPath, [callerFilePath], { encoding: 'utf8' });
+
+    expect(JSON.parse(importedModules)).toEqual({ '/sample.js': { ok: true } });
+  } finally {
+    fs.rmSync(temporaryRootPath, { recursive: true, force: true });
+  }
 });

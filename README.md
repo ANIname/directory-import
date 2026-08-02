@@ -336,6 +336,11 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 
 ## Change Log
 
+### Unreleased
+
+#### Fixed
+- Relative imports no longer fail when the caller path contains `:` (for example ISO-timestamp directories), because stack frame parsing now anchors on the trailing `:line:column` instead of truncating at the first colon.
+
 ### [3.3.2] - 2024-12-25
 
 #### Added
