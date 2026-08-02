@@ -7,6 +7,43 @@ import {
   ImportModulesMode,
 } from './types.d';
 
+/**
+ * Extract a filesystem caller path from a single V8 stack frame line.
+ * Anchors on the trailing `:line:column` so directories that contain `:`
+ * (for example ISO-timestamp folder names) are not truncated.
+ * @param {string | undefined} stackTraceLine - One line from `Error.stack`.
+ * @returns {string | undefined} The caller file path when it can be parsed.
+ */
+export function extractCallerFilePathFromStackLine(stackTraceLine: string | undefined): string | undefined {
+  if (!stackTraceLine) {
+    return undefined;
+  }
+
+  const parenthesizedMatch = /\((.+):(\d+):(\d+)\)/.exec(stackTraceLine);
+  const parenthesizedPath = parenthesizedMatch?.[1];
+
+  if (parenthesizedPath && isFilesystemCallerPath(parenthesizedPath)) {
+    return parenthesizedPath;
+  }
+
+  const bareMatch = /^\s*at (\/.+|[A-Za-z]:[/\\].+):(\d+):(\d+)$/.exec(stackTraceLine);
+
+  if (bareMatch?.[1]) {
+    return bareMatch[1];
+  }
+
+  return undefined;
+}
+
+/**
+ * Check whether a parsed stack frame candidate is a filesystem path.
+ * @param {string} candidatePath - Path candidate extracted from a stack frame.
+ * @returns {boolean} True when the candidate looks like an absolute filesystem path.
+ */
+function isFilesystemCallerPath(candidatePath: string): boolean {
+  return candidatePath.startsWith('/') || /^[A-Za-z]:[/\\]/.test(candidatePath);
+}
+
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
   const options = {
     includeSubdirectories: true,
@@ -20,10 +57,8 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
   };
 
   options.callerFilePath =
-    (new Error('functional-error').stack as string)
-      .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
+    extractCallerFilePathFromStackLine((new Error('functional-error').stack as string).split('\n')[4]) ||
+    options.callerFilePath;
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
