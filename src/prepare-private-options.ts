@@ -7,6 +7,53 @@ import {
   ImportModulesMode,
 } from './types.d';
 
+type ProcessWithSourceMapControls = NodeJS.Process & {
+  setSourceMapsEnabled?: (enabled: boolean) => void;
+};
+
+/**
+ * Returns whether Node is rewriting stack traces with source maps.
+ * @returns {boolean} True when source-map stack rewriting is enabled.
+ */
+function areSourceMapsEnabledForStackTraces(): boolean {
+  if (typeof process.sourceMapsEnabled === 'boolean') {
+    return process.sourceMapsEnabled;
+  }
+
+  if (process.execArgv.includes('--enable-source-maps')) {
+    return true;
+  }
+
+  return /\b--enable-source-maps\b/.test(process.env['NODE_OPTIONS'] ?? '');
+}
+
+/**
+ * Enables or disables Node source-map stack rewriting when the API exists.
+ * @param {boolean} enabled - Whether source-map stack rewriting should be enabled.
+ * @returns {void}
+ */
+function setProcessSourceMapsEnabled(enabled: boolean): void {
+  const { setSourceMapsEnabled } = process as ProcessWithSourceMapControls;
+
+  if (typeof setSourceMapsEnabled === 'function') {
+    setSourceMapsEnabled.call(process, enabled);
+  }
+}
+
+/**
+ * Parses the user-caller file path from a stack captured inside getDefaultOptions.
+ * @param {string | undefined} callerStack - Error.stack captured while source maps are disabled.
+ * @returns {string | undefined} The runtime caller file path, if it can be parsed.
+ */
+function parseCallerFilePathFromStack(callerStack: string | undefined): string | undefined {
+  return (
+    callerStack
+      ?.split('\n')[4]
+      // eslint-disable-next-line security/detect-unsafe-regex
+      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0]
+  );
+}
+
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
   const options = {
     includeSubdirectories: true,
@@ -19,11 +66,22 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
     forceReload: false,
   };
 
-  options.callerFilePath =
-    (new Error('functional-error').stack as string)
-      .split('\n')[4]
-      // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
+  const sourceMapsWereEnabled = areSourceMapsEnabledForStackTraces();
+
+  if (sourceMapsWereEnabled) {
+    setProcessSourceMapsEnabled(false);
+  }
+
+  try {
+    // Create the Error here so stack[4] remains the user caller, and read .stack
+    // while source maps are off so relative paths resolve against the runtime file.
+    options.callerFilePath =
+      parseCallerFilePathFromStack(new Error('functional-error').stack) || options.callerFilePath;
+  } finally {
+    if (sourceMapsWereEnabled) {
+      setProcessSourceMapsEnabled(true);
+    }
+  }
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
