@@ -23,36 +23,36 @@ function directoryImport(callback: ImportModulesCallback): ImportedModules;
 
 /**
  * Import modules from the specified directory synchronously.
- * @param {string} targetDirectoryPath - The path to the directory to import modules from.
+ * @param {string|URL} targetDirectoryPath - The path or file URL to the directory to import modules from.
  * @returns {ImportedModules} An object containing all imported modules.
  */
-function directoryImport(targetDirectoryPath: string): ImportedModules;
+function directoryImport(targetDirectoryPath: string | URL): ImportedModules;
 
 /**
  * Import all modules from the specified directory synchronously and call the provided callback for each imported module.
- * @param {string} targetDirectoryPath - The path to the directory to import modules from.
+ * @param {string|URL} targetDirectoryPath - The path or file URL to the directory to import modules from.
  * @param {ImportModulesCallback} callback - The callback function to call for each imported module.
  * @returns {ImportedModules} An object containing all imported modules.
  */
-function directoryImport(targetDirectoryPath: string, callback: ImportModulesCallback): ImportedModules;
+function directoryImport(targetDirectoryPath: string | URL, callback: ImportModulesCallback): ImportedModules;
 
 /**
  * Import all modules from the specified directory synchronously or asynchronously.
- * @param {string} targetDirectoryPath - The path to the directory to import modules from.
+ * @param {string|URL} targetDirectoryPath - The path or file URL to the directory to import modules from.
  * @param {ImportModulesMode} mode - The import mode. Can be 'sync' or 'async'.
  * @returns {ImportedModules} An object containing all imported modules.
  */
-function directoryImport(targetDirectoryPath: string, mode: ImportModulesMode): ImportedModules;
+function directoryImport(targetDirectoryPath: string | URL, mode: ImportModulesMode): ImportedModules;
 
 /**
  * Import all modules from the specified directory synchronously or asynchronously and call the provided callback for each imported module.
- * @param {string} targetDirectoryPath - The path to the directory to import modules from.
+ * @param {string|URL} targetDirectoryPath - The path or file URL to the directory to import modules from.
  * @param {ImportModulesMode} importMode - The import mode. Can be 'sync' or 'async'.
  * @param {ImportModulesCallback} callback - The callback function to call for each imported module.
  * @returns {ImportedModules} An object containing all imported modules.
  */
 function directoryImport(
-  targetDirectoryPath: string,
+  targetDirectoryPath: string | URL,
   importMode: ImportModulesMode,
   callback: ImportModulesCallback,
 ): ImportedModules;

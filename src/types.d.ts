@@ -7,7 +7,7 @@ export type ImportModulesMode = 'sync' | 'async';
 export type ImportModulesCallback = (name: ModuleName, path: ModulePath, data: ModuleData, index: ModuleIndex) => void;
 
 export type ImportModulesInputArguments = [
-  targetDirectoryPathOrOptionsOrCallback?: string | ImportedModulesPublicOptions | ImportModulesCallback,
+  targetDirectoryPathOrOptionsOrCallback?: string | URL | ImportedModulesPublicOptions | ImportModulesCallback,
   modeOrCallback?: ImportModulesMode | ImportModulesCallback,
   callback?: ImportModulesCallback,
 ];
@@ -18,16 +18,18 @@ export interface ImportedModules {
 
 export interface ImportedModulesPublicOptions {
   includeSubdirectories?: boolean;
-  targetDirectoryPath?: string;
+  targetDirectoryPath?: string | URL;
   importPattern?: RegExp;
   importMode?: ImportModulesMode;
   limit?: number;
   forceReload?: boolean;
 }
 
-export interface ImportedModulesPrivateOptions extends Required<ImportedModulesPublicOptions> {
+export interface ImportedModulesPrivateOptions
+  extends Omit<Required<ImportedModulesPublicOptions>, 'targetDirectoryPath'> {
   callback?: ImportModulesCallback;
 
   callerFilePath: string;
   callerDirectoryPath: string;
+  targetDirectoryPath: string;
 }
