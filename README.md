@@ -49,6 +49,17 @@ or:
 ```ts
 import { directoryImport } from 'directory-import';
 
+const importedModules = directoryImport(new URL('./path/to/directory', import.meta.url));
+
+// Same as a string path: { modulePath1: module1, modulePath2: module2, ... }
+console.log(importedModules);
+```
+
+or:
+
+```ts
+import { directoryImport } from 'directory-import';
+
 const importedModules = directoryImport('./path/to/directory');
 
 // Outputs an object with imported modules
@@ -106,7 +117,7 @@ directoryImport('./sample-directory', (moduleName, modulePath, moduleData) => {
 | Property              | Type    | Description                                                     |
 | --------------------- | ------- | --------------------------------------------------------------- |
 | includeSubdirectories | Boolean | If true, the module will import files from subdirectories       |
-| targetDirectoryPath   | String  | The path to the directory from which modules are to be imported |
+| targetDirectoryPath   | String or file URL | The path to the directory from which modules are to be imported |
 | importPattern         | RegExp  | RegExp pattern to filter files                                  |
 | importMode            | String  | The import mode. Can be 'sync' or 'async'                       |
 | limit                 | Number  | Limit the number of imported modules                            |
@@ -335,6 +346,13 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 ---
 
 ## Change Log
+
+### Unreleased
+
+#### Fixed
+- File URLs (`new URL('./plugins', import.meta.url)`) are treated as directory paths instead of options objects, which previously scanned the caller directory and crashed on ESM entry files.
+
+---
 
 ### [3.3.2] - 2024-12-25
 

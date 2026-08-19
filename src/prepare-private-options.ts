@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   ImportedModulesPrivateOptions,
@@ -6,6 +7,24 @@ import {
   ImportModulesInputArguments,
   ImportModulesMode,
 } from './types.d';
+
+/**
+ * Convert a file URL to an absolute filesystem path.
+ * @param {unknown} value - A potential URL instance passed as a directory path.
+ * @returns {string|undefined} The filesystem path, or undefined when value is not a URL.
+ * @throws {TypeError} When value is a URL that does not use the file: protocol.
+ */
+function tryFileUrlToPath(value: unknown): string | undefined {
+  if (!(value instanceof URL)) {
+    return undefined;
+  }
+
+  if (value.protocol !== 'file:') {
+    throw new TypeError(`Expected a file URL as directory path, but got: ${value.protocol}`);
+  }
+
+  return fileURLToPath(value);
+}
 
 const getDefaultOptions = (): ImportedModulesPrivateOptions => {
   const options = {
@@ -49,6 +68,15 @@ export default function preparePrivateOptions(
     return options;
   }
 
+  // ** If user provided a file URL as first argument,
+  // ** treat it as the target directory path (Node fs-style).
+  // ** URL is typeof object, so this must run before the options-object branch.
+  const filePathFromUrl = tryFileUrlToPath(arguments_[0]);
+
+  if (filePathFromUrl !== undefined) {
+    options.targetDirectoryPath = filePathFromUrl;
+  }
+
   // ** If user provided an object as first argument,
   // ** it means that he wants to set custom options
   // ** use it to oweverwrite the default options
@@ -58,10 +86,17 @@ export default function preparePrivateOptions(
       ...(arguments_[0] as ImportedModulesPublicOptions),
     };
 
-    result.targetDirectoryPath = path.resolve(result.callerDirectoryPath, result.targetDirectoryPath);
-    result.callback = typeof arguments_[1] === 'function' ? arguments_[1] : undefined;
+    const publicTargetDirectoryPath = result.targetDirectoryPath;
+    const resolvedTargetDirectoryPath =
+      tryFileUrlToPath(publicTargetDirectoryPath) ?? (publicTargetDirectoryPath as string);
 
-    return result;
+    const preparedOptions: ImportedModulesPrivateOptions = {
+      ...result,
+      targetDirectoryPath: path.resolve(result.callerDirectoryPath, resolvedTargetDirectoryPath),
+      callback: typeof arguments_[1] === 'function' ? arguments_[1] : undefined,
+    };
+
+    return preparedOptions;
   }
 
   // ** If user provided a string

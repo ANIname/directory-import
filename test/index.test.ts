@@ -1,3 +1,9 @@
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
 import { directoryImport } from '../src';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
@@ -6,7 +12,6 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
-import fs from 'fs';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -221,6 +226,71 @@ test('Import modules with specified options and call the provided callback for e
 
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
   expect(callbackResults).toEqual(DEFAULT_EXPECTED_CALLBACK_RESULTS_FROM_SAMPLE_DIRECTORY);
+});
+
+test('Import modules from a file URL directory path', () => {
+  const result = directoryImport(pathToFileURL(DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY));
+
+  expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
+});
+
+test('Import modules from a file URL directory path asynchronously', async () => {
+  const result = directoryImport(pathToFileURL(DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY), 'async');
+
+  expect(result).toBeInstanceOf(Promise);
+  expect(await result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
+});
+
+test('Import modules when targetDirectoryPath is a file URL', () => {
+  const result = directoryImport({
+    targetDirectoryPath: pathToFileURL(DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY),
+  });
+
+  expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
+});
+
+test('Reject non-file URLs as directory paths', () => {
+  expect(() => directoryImport(new URL('https://example.com/plugins'))).toThrow(
+    /Expected a file URL as directory path/,
+  );
+  expect(() =>
+    directoryImport({
+      targetDirectoryPath: new URL('https://example.com/plugins'),
+    }),
+  ).toThrow(/Expected a file URL as directory path/);
+});
+
+test('Import modules from an ESM file URL idiom against built dist', () => {
+  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-url-'));
+  const pluginsDirectoryPath = path.join(temporaryDirectoryPath, 'plugins');
+  const callerFilePath = path.join(temporaryDirectoryPath, 'app.mjs');
+  const builtLibraryPath = path.resolve(__dirname, '../dist/index.js');
+
+  fs.mkdirSync(pluginsDirectoryPath);
+  fs.writeFileSync(path.join(pluginsDirectoryPath, 'ok.js'), "module.exports = { where: 'plugins' };\n");
+  fs.writeFileSync(
+    callerFilePath,
+    `import { directoryImport } from ${JSON.stringify(pathToFileURL(builtLibraryPath).href)};
+
+const importedModules = directoryImport(new URL('./plugins', import.meta.url));
+
+console.log(JSON.stringify(importedModules));
+`,
+  );
+
+  try {
+    const { status, stdout, stderr } = spawnSync(process.execPath, [callerFilePath], {
+      encoding: 'utf8',
+    });
+
+    expect(stderr).not.toMatch(/Cannot require\(\) ES Module/);
+    expect({ status, stdout, stderr }).toEqual(expect.objectContaining({ status: 0 }));
+    expect(JSON.parse(stdout)).toEqual({
+      '/ok.js': { where: 'plugins' },
+    });
+  } finally {
+    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+  }
 });
 
 test('Import modules with cache', () => {
