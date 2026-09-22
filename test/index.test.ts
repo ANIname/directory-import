@@ -1,3 +1,7 @@
+import { execFileSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
 import { directoryImport } from '../src';
 import { ImportedModulesPublicOptions } from '../src/types.d';
 import {
@@ -262,4 +266,127 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('forceReload does not re-enter modules that are still loading', () => {
+  const rootDirectoryPath = fs.mkdtempSync(path.join(tmpdir(), 'directory-import-inflight-'));
+  const distPath = path.join(__dirname, '../dist/index.js');
+  const mainFilePath = path.join(rootDirectoryPath, 'main.js');
+  const siblingFilePath = path.join(rootDirectoryPath, 'sibling.js');
+
+  fs.writeFileSync(
+    siblingFilePath,
+    [
+      `const { directoryImport } = require(${JSON.stringify(distPath)});`,
+      "console.log('SIBLING_START');",
+      'const importedModules = directoryImport({ targetDirectoryPath: __dirname, forceReload: true, includeSubdirectories: false });',
+      "console.log('SIBLING_KEYS', Object.keys(importedModules).sort().join(','));",
+      'module.exports = { from: "sibling" };',
+      "console.log('SIBLING_END');",
+      '',
+    ].join('\n'),
+  );
+  fs.writeFileSync(
+    mainFilePath,
+    [
+      `const { directoryImport } = require(${JSON.stringify(distPath)});`,
+      "console.log('MAIN_START');",
+      "require('./sibling.js');",
+      'const importedModules = directoryImport({ targetDirectoryPath: __dirname, forceReload: true, includeSubdirectories: false });',
+      "console.log('MAIN_KEYS', Object.keys(importedModules).sort().join(','));",
+      "console.log('MAIN_END');",
+      '',
+    ].join('\n'),
+  );
+
+  try {
+    const output = execFileSync(process.execPath, [mainFilePath], { encoding: 'utf8' });
+
+    expect(output).toContain('MAIN_END');
+    expect(output).toContain('SIBLING_END');
+    expect(output).toContain('MAIN_KEYS /main.js,/sibling.js');
+  } finally {
+    fs.rmSync(rootDirectoryPath, { force: true, recursive: true });
+  }
+});
+
+test('async forceReload does not loop when imported modules reload the same directory', () => {
+  const rootDirectoryPath = fs.mkdtempSync(path.join(tmpdir(), 'directory-import-async-reload-'));
+  const distPath = path.join(__dirname, '../dist/index.js');
+  const mainFilePath = path.join(rootDirectoryPath, 'main.js');
+  const siblingFilePath = path.join(rootDirectoryPath, 'sibling.js');
+  const reloadOptions =
+    'directoryImport({ targetDirectoryPath: __dirname, forceReload: true, includeSubdirectories: false, importMode: "async" })';
+
+  fs.writeFileSync(
+    siblingFilePath,
+    [
+      `const { directoryImport } = require(${JSON.stringify(distPath)});`,
+      "console.log('SIBLING_START');",
+      `${reloadOptions}.then((importedModules) => {`,
+      "  console.log('SIBLING_KEYS', Object.keys(importedModules).sort().join(','));",
+      "  console.log('SIBLING_END');",
+      '}).catch((error) => { console.error(error); process.exitCode = 1; });',
+      'module.exports = { from: "sibling" };',
+      '',
+    ].join('\n'),
+  );
+  fs.writeFileSync(
+    mainFilePath,
+    [
+      `const { directoryImport } = require(${JSON.stringify(distPath)});`,
+      "console.log('MAIN_START');",
+      "require('./sibling.js');",
+      `${reloadOptions}.then((importedModules) => {`,
+      "  console.log('MAIN_KEYS', Object.keys(importedModules).sort().join(','));",
+      "  console.log('MAIN_END');",
+      '}).catch((error) => { console.error(error); process.exitCode = 1; });',
+      '',
+    ].join('\n'),
+  );
+
+  try {
+    const output = execFileSync(process.execPath, [mainFilePath], { encoding: 'utf8', timeout: 3000 });
+    const mainStartCount = output.split('MAIN_START').length - 1;
+
+    expect(output).toContain('MAIN_END');
+    expect(output).toContain('SIBLING_END');
+    expect(output).toContain('MAIN_KEYS /main.js,/sibling.js');
+    expect(mainStartCount).toBeLessThanOrEqual(2);
+  } finally {
+    fs.rmSync(rootDirectoryPath, { force: true, recursive: true });
+  }
+});
+
+test('forceReload still refreshes modules that have finished loading', () => {
+  const rootDirectoryPath = fs.mkdtempSync(path.join(tmpdir(), 'directory-import-reload-'));
+  const pluginDirectoryPath = path.join(rootDirectoryPath, 'plugins');
+  const appFilePath = path.join(rootDirectoryPath, 'app.js');
+  const distPath = path.join(__dirname, '../dist/index.js');
+
+  fs.mkdirSync(pluginDirectoryPath);
+  fs.writeFileSync(
+    appFilePath,
+    [
+      "const fs = require('node:fs');",
+      "const path = require('node:path');",
+      `const { directoryImport } = require(${JSON.stringify(distPath)});`,
+      `const pluginDirectoryPath = ${JSON.stringify(pluginDirectoryPath)};`,
+      "const pluginFilePath = path.join(pluginDirectoryPath, 'plugin.js');",
+      "fs.writeFileSync(pluginFilePath, 'module.exports = { value: 1 };\\n');",
+      'const firstImport = directoryImport({ targetDirectoryPath: pluginDirectoryPath, forceReload: true });',
+      "fs.writeFileSync(pluginFilePath, 'module.exports = { value: 2 };\\n');",
+      'const secondImport = directoryImport({ targetDirectoryPath: pluginDirectoryPath, forceReload: true });',
+      "console.log(JSON.stringify({ first: firstImport['/plugin.js'].value, second: secondImport['/plugin.js'].value }));",
+      '',
+    ].join('\n'),
+  );
+
+  try {
+    const output = execFileSync(process.execPath, [appFilePath], { encoding: 'utf8' });
+
+    expect(JSON.parse(output)).toEqual({ first: 1, second: 2 });
+  } finally {
+    fs.rmSync(rootDirectoryPath, { force: true, recursive: true });
+  }
 });
