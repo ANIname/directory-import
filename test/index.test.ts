@@ -7,6 +7,8 @@ import {
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
 import fs from 'fs';
+import os from 'os';
+import path from 'path';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -262,4 +264,73 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+test('keeps final exports when a sibling module is still loading', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-inflight-'));
+  const scanDirectory = (targetDirectoryPath: string) => directoryImport(targetDirectoryPath);
+
+  (globalThis as { __directoryImportScan?: typeof scanDirectory }).__directoryImportScan = scanDirectory;
+
+  const fileNames = ['a.js', 'b.js', 'done.js'];
+
+  try {
+    fs.writeFileSync(
+      path.join(directory, 'done.js'),
+      "module.exports = { name: 'done', ok: true };\n",
+    );
+    fs.writeFileSync(
+      path.join(directory, 'a.js'),
+      [
+        "const sibling = require('./b.js');",
+        "module.exports = { name: 'a', ok: true, siblingName: sibling.name };",
+        '',
+      ].join('\n'),
+    );
+    fs.writeFileSync(
+      path.join(directory, 'b.js'),
+      [
+        'const importedModules = globalThis.__directoryImportScan(__dirname);',
+        "module.exports = { name: 'b', importedModules };",
+        '',
+      ].join('\n'),
+    );
+
+    const loadedA = require(path.join(directory, 'a.js')) as { siblingName: string };
+    const loadedB = require(path.join(directory, 'b.js')) as {
+      importedModules: Record<string, { name?: string; ok?: boolean; siblingName?: string }>;
+    };
+    const importedModule = (fileName: string) => {
+      const moduleKey = Object.keys(loadedB.importedModules).find((modulePath) =>
+        modulePath.endsWith(`${path.sep}${fileName}`),
+      );
+
+      if (!moduleKey) {
+        throw new Error(`Missing imported module ${fileName}`);
+      }
+
+      return { moduleKey, moduleExports: loadedB.importedModules[moduleKey] };
+    };
+    const importedA = importedModule('a.js');
+    const importedDone = importedModule('done.js');
+
+    expect(loadedA.siblingName).toBe('b');
+    expect(importedA.moduleExports).toEqual({ name: 'a', ok: true, siblingName: 'b' });
+    expect(importedA.moduleExports).toBe(loadedA);
+    expect(importedDone.moduleExports).toEqual({ name: 'done', ok: true });
+    expect(Object.getOwnPropertyDescriptor(loadedB.importedModules, importedDone.moduleKey)?.value).toEqual({
+      name: 'done',
+      ok: true,
+    });
+  } finally {
+    delete (globalThis as { __directoryImportScan?: typeof scanDirectory }).__directoryImportScan;
+
+    for (const fileName of fileNames) {
+      const filePath = path.join(directory, fileName);
+
+      delete require.cache[filePath];
+    }
+
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
 });
