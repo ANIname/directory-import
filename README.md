@@ -336,6 +336,11 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 
 ## Change Log
 
+### Unreleased
+
+#### Fixed
+- Importing a directory while another file in that directory is still loading now keeps that file's final `module.exports` instead of the empty object captured mid-load.
+
 ### [3.3.2] - 2024-12-25
 
 #### Added

@@ -85,13 +85,47 @@ function importModule(
   // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-var-requires, unicorn/prefer-module
   const importedModule = require(filePath) as unknown;
 
-  modules[relativeModulePath] = importedModule;
+  const resolvedModulePath = resolveModuleCacheKey(filePath);
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, unicorn/prefer-module
+  const cachedModule = require.cache[resolvedModulePath];
+  const callerPath = resolveModuleCacheKey(options.callerFilePath);
+  // A sibling that is still evaluating can replace module.exports after this
+  // function returns. Keep the Module instance so later reads see the final
+  // exports instead of the empty object captured mid-load. The caller itself
+  // stays a direct reference so an in-progress self-import is unchanged.
+  if (cachedModule && cachedModule.loaded === false && resolvedModulePath !== callerPath) {
+    const evaluatingModule = cachedModule;
+
+    Object.defineProperty(modules, relativeModulePath, {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return evaluatingModule.exports as unknown;
+      },
+    });
+  } else {
+    modules[relativeModulePath] = importedModule;
+  }
 
   if (options.callback) {
     options.callback(fileName, relativeModulePath, importedModule, index);
   }
 
   return true;
+}
+
+/**
+ * Resolve the `require.cache` key for a module path.
+ * @param {string} modulePath - Filesystem path passed to `require`.
+ * @returns {string} Node's resolved cache key, or `modulePath` when resolution fails.
+ */
+function resolveModuleCacheKey(modulePath: string): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, unicorn/prefer-module
+    return require.resolve(modulePath);
+  } catch {
+    return modulePath;
+  }
 }
 
 /**
