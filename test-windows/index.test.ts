@@ -6,6 +6,7 @@ import {
   DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY,
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
+import path from 'path';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -220,4 +221,32 @@ test('Import modules with specified options and call the provided callback for e
 
   expect(result).toEqual(DEFAULT_EXPECTED_RESULT_FROM_SAMPLE_DIRECTORY);
   expect(callbackResults).toEqual(DEFAULT_EXPECTED_CALLBACK_RESULTS_FROM_SAMPLE_DIRECTORY);
+});
+
+test('Keep a UNC caller path instead of falling back to the drive root', () => {
+  const callerFilePath = '\\\\server\\share\\app\\index.js';
+  const previousPrepareStackTrace = Error.prepareStackTrace;
+  let importError: (Error & { callerFilePath?: string; targetDirectoryPath?: string }) | undefined;
+
+  Error.prepareStackTrace = () =>
+    [
+      'Error: functional-error',
+      '    at getDefaultOptions (internal:1:1)',
+      '    at preparePrivateOptions (internal:2:1)',
+      '    at directoryImport (internal:3:1)',
+      `    at Object.<anonymous> (${callerFilePath}:1:1)`,
+    ].join('\n');
+
+  try {
+    directoryImport('./__missing_unc_plugins__');
+  } catch (error) {
+    importError = error as Error & { callerFilePath?: string; targetDirectoryPath?: string };
+  } finally {
+    Error.prepareStackTrace = previousPrepareStackTrace;
+  }
+
+  expect(importError?.callerFilePath).toBe(callerFilePath);
+  expect(importError?.targetDirectoryPath).toBe(
+    path.win32.resolve('\\\\server\\share\\app', './__missing_unc_plugins__'),
+  );
 });
