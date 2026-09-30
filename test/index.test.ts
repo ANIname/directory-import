@@ -7,6 +7,8 @@ import {
   DEFAULT_RELATIVE_PATH_TO_SAMPLE_DIRECTORY,
 } from './constants';
 import fs from 'fs';
+import os from 'os';
+import path from 'path';
 
 test('Import modules from the default (current) directory synchronously', () => {
   const result = directoryImport();
@@ -262,4 +264,70 @@ test('Import modules without cache', () => {
 
   // revert the content of sample-file-2.js
   fs.writeFileSync(`${DEFAULT_ABSOLUTE_PATH_TO_SAMPLE_DIRECTORY}/sample-file-2.js`, "// eslint-disable-next-line unicorn/no-empty-file, no-undef, unicorn/prefer-module\nmodule.exports = { testData: 'Hello World!' };\n");
+});
+
+/**
+ * Run directoryImport while forcing the caller frame used for relative paths.
+ * @param {string} callerFilePath - Absolute caller path placed on the stack.
+ * @param {() => void} importCall - Call that invokes directoryImport.
+ * @returns {void}
+ */
+function withCallerFilePath(callerFilePath: string, importCall: () => void) {
+  const previousPrepareStackTrace = Error.prepareStackTrace;
+
+  Error.prepareStackTrace = () =>
+    [
+      'Error: functional-error',
+      '    at getDefaultOptions (internal:1:1)',
+      '    at preparePrivateOptions (internal:2:1)',
+      '    at directoryImport (internal:3:1)',
+      `    at Object.<anonymous> (${callerFilePath}:1:1)`,
+    ].join('\n');
+
+  try {
+    importCall();
+  } finally {
+    Error.prepareStackTrace = previousPrepareStackTrace;
+  }
+}
+
+test('Import modules from a relative path when the caller frame is a normal filesystem path', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'directory-import-caller-'));
+  const callerFilePath = path.join(root, 'caller.js');
+
+  fs.mkdirSync(path.join(root, 'plugins'));
+  fs.writeFileSync(path.join(root, 'plugins', 'loaded.js'), 'module.exports = { loaded: true };\n');
+
+  try {
+    let result: unknown;
+
+    withCallerFilePath(callerFilePath, () => {
+      result = directoryImport('./plugins');
+    });
+
+    expect(Object.values(result as Record<string, unknown>)).toEqual([{ loaded: true }]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Keep a UNC caller path instead of falling back to the filesystem root', () => {
+  const callerFilePath = '\\\\server\\share\\app\\index.js';
+  let importError: (Error & { callerFilePath?: string; targetDirectoryPath?: string }) | undefined;
+
+  withCallerFilePath(callerFilePath, () => {
+    try {
+      directoryImport('./__missing_unc_plugins__');
+    } catch (error) {
+      importError = error as Error & { callerFilePath?: string; targetDirectoryPath?: string };
+    }
+  });
+
+  expect(importError).toBeDefined();
+  expect(importError?.callerFilePath).toBe(callerFilePath);
+  expect(importError?.callerFilePath).not.toBe(path.resolve('/'));
+
+  if (path === path.win32) {
+    expect(importError?.targetDirectoryPath).toBe('\\\\server\\share\\app\\__missing_unc_plugins__');
+  }
 });

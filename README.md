@@ -336,6 +336,11 @@ directoryImport(options, (moduleName, modulePath, moduleData) => {
 
 ## Change Log
 
+### Unreleased
+
+#### Fixed
+- Relative imports now resolve when the caller lives on a UNC share (`\\server\share\...`). The caller path was ignored before, so imports fell back to the drive root.
+
 ### [3.3.2] - 2024-12-25
 
 #### Added

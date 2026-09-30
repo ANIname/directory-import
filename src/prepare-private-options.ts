@@ -19,11 +19,15 @@ const getDefaultOptions = (): ImportedModulesPrivateOptions => {
     forceReload: false,
   };
 
+  // Drive-letter and POSIX paths match the second alternative. UNC shares
+  // (\\server\share\app.js) have neither, so without the first alternative
+  // caller detection falls back to the drive root and directoryImport()
+  // scans that root instead of the share.
   options.callerFilePath =
     (new Error('functional-error').stack as string)
       .split('\n')[4]
       // eslint-disable-next-line security/detect-unsafe-regex
-      ?.match(/(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
+      ?.match(/\\\\[^./?\\]+\\[^/\\]+\\[^:]+|(?:\/|[A-Za-z]:\\)[/\\]?(?:[^:]+){1,2}/)?.[0] || options.callerFilePath;
 
   options.callerDirectoryPath = path.dirname(options.callerFilePath);
   options.targetDirectoryPath = options.callerDirectoryPath;
